@@ -1,0 +1,16 @@
+cd /Users/eugbene/gym-retention-saas
+
+# See what’s changed
+git status
+
+# Stage everything
+git add -A
+
+# Commit (use one message or split into several commits)
+git commit -m "Retention features: CSV upload, churn metrics, commitment scoring with time decay, member intelligence, settings members section"
+
+# If you don’t have a GitHub remote yet, add it (replace with your repo URL):
+# git remote add origin https://github.com/YOUR_USERNAME/gym-retention-saas.git
+
+# Push (use main or master depending on your default branch)
+git push -u origin main
