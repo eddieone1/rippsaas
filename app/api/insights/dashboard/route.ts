@@ -144,7 +144,7 @@ export async function GET(request: Request) {
       }
       last12Keys.add(`${y}-${String(m + 1).padStart(2, "0")}`);
     }
-    const allMonthKeys = new Set<ChurnMonth>([...last12Keys, ...Object.keys(churnedByMonth)]);
+    const allMonthKeys = new Set<ChurnMonth>([...Array.from(last12Keys), ...Object.keys(churnedByMonth)]);
     const sortedKeys = Array.from(allMonthKeys).sort();
     const monthsForSeries: { year: number; month: number; key: ChurnMonth }[] = sortedKeys
       .slice(-24)
