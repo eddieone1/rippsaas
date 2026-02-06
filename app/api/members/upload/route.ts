@@ -235,7 +235,7 @@ export async function POST(request: Request) {
       // Recalculate churn risk with all available factors
       const riskResultWithDistance = calculateChurnRisk({
         last_visit_date: row.last_visit_date || (allVisits.length > 0 ? allVisits[0] : null),
-        joined_date: row.joined_date,
+        joined_date: joinedDate,
         has_received_campaign: false,
         distance_from_gym_km: distanceFromGymKm,
         age: (rowAny.age as number | null) ?? null,

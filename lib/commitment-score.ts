@@ -583,8 +583,7 @@ export function calculateCommitmentScore(
   );
   const { score: declineVelocityScore, velocity: declineVelocity } = calculateDeclineVelocity(
     sortedVisits,
-    daysSinceJoined,
-    refDate
+    daysSinceJoined
   );
 
   // Weighted base score (frequency, consistency, gaps, decline velocity)
