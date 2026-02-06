@@ -134,7 +134,7 @@ export async function GET(request: Request) {
 
     const thisYear = now.getFullYear();
     const thisMonth = now.getMonth();
-    const last12Keys = new Set<ChurnMonth>();
+    const last12Keys: ChurnMonth[] = [];
     for (let i = 0; i < 12; i++) {
       let m = thisMonth - i;
       let y = thisYear;
@@ -142,9 +142,9 @@ export async function GET(request: Request) {
         m += 12;
         y -= 1;
       }
-      last12Keys.add(`${y}-${String(m + 1).padStart(2, "0")}`);
+      last12Keys.push(`${y}-${String(m + 1).padStart(2, "0")}`);
     }
-    const allMonthKeys = new Set<ChurnMonth>(Array.from(last12Keys).concat(Object.keys(churnedByMonth) as ChurnMonth[]));
+    const allMonthKeys = new Set<ChurnMonth>([...last12Keys, ...Object.keys(churnedByMonth)]);
     const sortedKeys = Array.from(allMonthKeys).sort();
     const monthsForSeries: { year: number; month: number; key: ChurnMonth }[] = sortedKeys
       .slice(-24)
