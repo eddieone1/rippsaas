@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
 import ThemeVars from "@/components/layout/ThemeVars";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProtectedLayout({
   children,
 }: {
