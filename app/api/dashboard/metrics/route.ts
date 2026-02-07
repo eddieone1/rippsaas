@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { calculateCommitmentScore } from '@/lib/commitment-score';
 import { subDays, formatISO, differenceInDays, parseISO } from 'date-fns';
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/dashboard/metrics
  * 

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAction } from '@/lib/auth/guards';
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/organizations/invites
  * Get pending invites for current user's email (for join flow)

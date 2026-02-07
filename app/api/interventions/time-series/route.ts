@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * API endpoint to fetch time-series data for visual charts
  * Returns metrics grouped by time period (daily, weekly, monthly)

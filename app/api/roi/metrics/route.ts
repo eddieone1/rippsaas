@@ -12,6 +12,8 @@ import {
 } from '@/lib/roi/calculations';
 import { subMonths, subDays, formatISO } from 'date-fns';
 
+export const dynamic = "force-dynamic";
+
 /** Default time range: last 30 days (financial proof-of-value page) */
 const DEFAULT_TIME_RANGE = '30days';
 
