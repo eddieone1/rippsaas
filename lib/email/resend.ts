@@ -1,6 +1,9 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy init so Resend is not instantiated at build time (when RESEND_API_KEY is missing)
+function getResend(): Resend {
+  return new Resend(process.env.RESEND_API_KEY!);
+}
 
 interface SendEmailParams {
   to: string;
@@ -16,6 +19,7 @@ export async function sendEmail({ to, subject, body, from }: SendEmailParams) {
   }
 
   try {
+    const resend = getResend();
     const { data, error } = await resend.emails.send({
       from: from || "Rip <noreply@rip.ai>",
       to,
