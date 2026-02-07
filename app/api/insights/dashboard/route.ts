@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { MEMBER_STAGES, MEMBER_STAGE_LABELS } from "@/lib/member-intelligence";
 
+export const dynamic = "force-dynamic";
+
 /**
  * API endpoint to fetch insights dashboard data
  * Returns engagement rates, churn metrics, campaign performance, and recent activities
