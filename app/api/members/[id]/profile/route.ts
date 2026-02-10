@@ -11,7 +11,7 @@ import {
   getBehaviourInterpretation,
   MEMBER_STAGE_LABELS,
 } from '@/lib/member-intelligence';
-import { differenceInDays, parseISO, subDays, formatISO } from 'date-fns';
+import { differenceInDays, format, parseISO, subDays, formatISO } from 'date-fns';
 
 /**
  * GET /api/members/[id]/profile
@@ -70,14 +70,11 @@ export async function GET(
     });
 
     const now = new Date();
-    const thirtyDaysAgo = subDays(now, 30);
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const thirtyDaysAgoStr = format(subDays(now, 30), 'yyyy-MM-dd');
     const visitsLast30Days = visitDates.filter((d) => {
-      try {
-        const date = parseISO(d);
-        return date >= thirtyDaysAgo && date <= now;
-      } catch {
-        return false;
-      }
+      const ds = (d || '').slice(0, 10);
+      return ds >= thirtyDaysAgoStr && ds <= todayStr;
     }).length;
     const daysSinceJoined = differenceInDays(now, parseISO(member.joined_date));
     const daysSinceLastVisit = member.last_visit_date

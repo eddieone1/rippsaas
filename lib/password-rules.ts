@@ -1,41 +1,30 @@
 /**
- * Shared password rules for the SaaS.
- * Passwords must be at least 8 characters and include at least one special character.
+ * Password validation and rules text for signup/change-password flows.
  */
 
-export const PASSWORD_MIN_LENGTH = 8;
-
-/** Characters that count as "special" (non-alphanumeric, not space). */
-const SPECIAL_CHAR_REGEX = /[^a-zA-Z0-9\s]/;
-
-/** User-facing description of password requirements (use in hints and errors). */
 export const PASSWORD_RULES_TEXT =
-  "At least 8 characters, including one special character (e.g. !@#$%^&*)";
+  "At least 8 characters, with one uppercase letter, one lowercase letter, and one number.";
 
-export interface PasswordValidation {
+const MIN_LENGTH = 8;
+const HAS_UPPER = /[A-Z]/;
+const HAS_LOWER = /[a-z]/;
+const HAS_NUMBER = /\d/;
+
+export function validatePassword(password: string): {
   valid: boolean;
   message?: string;
-}
-
-/**
- * Validates a password against app rules.
- * Returns { valid: true } or { valid: false, message: "..." }.
- */
-export function validatePassword(password: string): PasswordValidation {
-  if (!password || typeof password !== "string") {
-    return { valid: false, message: "Password is required" };
+} {
+  if (password.length < MIN_LENGTH) {
+    return { valid: false, message: "Password must be at least 8 characters." };
   }
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return {
-      valid: false,
-      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-    };
+  if (!HAS_UPPER.test(password)) {
+    return { valid: false, message: "Password must include at least one uppercase letter." };
   }
-  if (!SPECIAL_CHAR_REGEX.test(password)) {
-    return {
-      valid: false,
-      message: "Password must include at least one special character (e.g. !@#$%^&*)",
-    };
+  if (!HAS_LOWER.test(password)) {
+    return { valid: false, message: "Password must include at least one lowercase letter." };
+  }
+  if (!HAS_NUMBER.test(password)) {
+    return { valid: false, message: "Password must include at least one number." };
   }
   return { valid: true };
 }

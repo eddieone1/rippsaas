@@ -33,6 +33,9 @@ async function handleProfileUpdate(request: Request) {
       logo_url,
       brand_primary_color,
       brand_secondary_color,
+      sender_name,
+      sender_email,
+      sms_from_number,
     } = await request.json();
 
     // gymName and fullName are optional for branding updates
@@ -63,7 +66,7 @@ async function handleProfileUpdate(request: Request) {
       );
     }
 
-    // Update gym with address and branding fields
+    // Update gym with address, branding, and sender identity
     const gymUpdate: {
       name?: string;
       address_line1?: string | null;
@@ -76,6 +79,9 @@ async function handleProfileUpdate(request: Request) {
       logo_url?: string | null;
       brand_primary_color?: string | null;
       brand_secondary_color?: string | null;
+      sender_name?: string | null;
+      sender_email?: string | null;
+      sms_from_number?: string | null;
     } = {};
 
     // Only update fields that are provided
@@ -90,6 +96,9 @@ async function handleProfileUpdate(request: Request) {
     if (logo_url !== undefined) gymUpdate.logo_url = logo_url || null;
     if (brand_primary_color !== undefined) gymUpdate.brand_primary_color = brand_primary_color || null;
     if (brand_secondary_color !== undefined) gymUpdate.brand_secondary_color = brand_secondary_color || null;
+    if (sender_name !== undefined) gymUpdate.sender_name = sender_name || null;
+    if (sender_email !== undefined) gymUpdate.sender_email = sender_email || null;
+    if (sms_from_number !== undefined) gymUpdate.sms_from_number = sms_from_number || null;
 
     const { error: gymError } = await supabase
       .from("gyms")

@@ -1,14 +1,9 @@
 /**
- * Member Intelligence
- *
- * Proactive retention: behaviour interpretation, churn probability,
- * habit decay index, emotional disengagement flags, and dynamic member stages.
+ * Habit Lifecycle Mapping – member stages and retention plays.
+ * Members are mapped dynamically across stages; each stage triggers a different retention play.
+ * @see 4.2 Habit Lifecycle Mapping
  */
 
-import type { RiskFlags } from "./commitment-score";
-import type { ChurnRiskLevel } from "./churn-risk";
-
-/** DB/storage values for the 7 member stages */
 export const MEMBER_STAGES = [
   "onboarding_vulnerability",
   "habit_formation",
@@ -17,11 +12,11 @@ export const MEMBER_STAGES = [
   "emotional_disengagement",
   "at_risk_silent_quit",
   "win_back_window",
+  "churned",
 ] as const;
 
 export type MemberStage = (typeof MEMBER_STAGES)[number];
 
-/** Human-readable labels for UI */
 export const MEMBER_STAGE_LABELS: Record<MemberStage, string> = {
   onboarding_vulnerability: "Onboarding vulnerability",
   habit_formation: "Habit formation",
@@ -30,221 +25,152 @@ export const MEMBER_STAGE_LABELS: Record<MemberStage, string> = {
   emotional_disengagement: "Emotional disengagement",
   at_risk_silent_quit: "At-risk & silent quit",
   win_back_window: "Win-back window",
+  churned: "Churned",
 };
 
-export interface MemberIntelligenceInput {
-  status: "active" | "inactive" | "cancelled";
+/** Subtle retention play (strategy) suggested for each stage. */
+export const MEMBER_STAGE_PLAYS: Record<MemberStage, string> = {
+  onboarding_vulnerability: "Nurture first 30 days: check-in calls, goal-setting, first-win celebrations.",
+  habit_formation: "Lock in routine: suggest fixed class times, buddy invites, small rewards for consistency.",
+  momentum_identity: "Reinforce identity: highlight streaks, member spotlights, community events.",
+  plateau_boredom_risk: "Reignite interest: new goals, challenges, or a different class format.",
+  emotional_disengagement: "Reconnect personally: 1:1 touchpoint, ask what would make the gym feel essential again.",
+  at_risk_silent_quit: "Prioritise outreach: personalised message or call before they slip away.",
+  win_back_window: "Win-back campaign: we-miss-you message, incentive or free class to bring them back.",
+  churned: "Optional win-back: targeted offer if they left on good terms; otherwise respect the exit.",
+};
+
+export interface GetMemberStageParams {
+  status: string;
   churnRiskScore: number;
-  churnRiskLevel: ChurnRiskLevel;
+  churnRiskLevel: string;
   commitmentScore: number;
-  habitDecayVelocity: number;
+  habitDecayVelocity?: number;
   daysSinceJoined: number;
   daysSinceLastVisit: number | null;
   visitsLast30Days: number;
-  riskFlags: RiskFlags;
-  /** Attendance decay factor score 0-100 (from commitment factorScores) */
+  riskFlags?: string[] | Record<string, unknown>;
   attendanceDecayScore?: number;
 }
 
 /**
- * Map member data to one of the 7 dynamic retention stages.
+ * Map a member into one of the habit lifecycle stages.
+ * Uses status, tenure, recency, risk and commitment to place them in the right bucket.
  */
-export function getMemberStage(input: MemberIntelligenceInput): MemberStage {
+export function getMemberStage(params: GetMemberStageParams): MemberStage {
   const {
     status,
     churnRiskScore,
+    churnRiskLevel,
     commitmentScore,
     daysSinceJoined,
     daysSinceLastVisit,
     visitsLast30Days,
-    riskFlags,
-    habitDecayVelocity,
-  } = input;
+  } = params;
 
-  // Inactive or cancelled = stage 7 (win-back window)
-  if (status === "inactive" || status === "cancelled") {
-    return "win_back_window";
-  }
-
-  // Never visited or no recent data
-  if (daysSinceLastVisit === null && daysSinceJoined > 0) {
-    return "onboarding_vulnerability";
-  }
+  if (status === "cancelled") return "churned";
 
   const daysSince = daysSinceLastVisit ?? 999;
+  const isNew = daysSinceJoined <= 30;
+  const isVeryNew = daysSinceJoined <= 14;
+  const isLapsed = daysSince >= 14; // 2+ weeks no visit
+  const isLongLapsed = daysSince >= 30;
+  const isHighRisk = churnRiskLevel === "high" || churnRiskScore >= 65;
+  const isMediumRisk = churnRiskLevel === "medium" || (churnRiskScore >= 40 && churnRiskScore < 65);
+  const isLowCommitment = commitmentScore < 40;
+  const isDecliningCommitment = commitmentScore >= 40 && commitmentScore < 60;
+  const hasStrongHabit = visitsLast30Days >= 3 && commitmentScore >= 60;
+  const hasFormingHabit = visitsLast30Days >= 1 && daysSince <= 7;
 
-  // At-risk & silent quit: high churn, long absence, or multiple red flags
-  if (
-    churnRiskScore >= 60 ||
-    daysSince >= 30 ||
-    (riskFlags.noRecentVisits && riskFlags.largeGap) ||
-    (riskFlags.rapidDecline && riskFlags.decliningFrequency)
-  ) {
-    return "at_risk_silent_quit";
-  }
+  // Win-back window: lapsed but not cancelled – best time to re-engage
+  if (status !== "cancelled" && isLongLapsed && !hasFormingHabit) return "win_back_window";
 
-  // Emotional disengagement: declining engagement without yet critical absence
-  if (
-    (riskFlags.rapidDecline || riskFlags.decliningFrequency) &&
-    commitmentScore < 45 &&
-    daysSince >= 14
-  ) {
+  // At-risk & silent quit: high risk, drifting, not yet lapsed long
+  if (isHighRisk && (isLapsed || isLowCommitment)) return "at_risk_silent_quit";
+
+  // Emotional disengagement: medium risk or declining commitment, still some visits
+  if ((isMediumRisk || isDecliningCommitment) && visitsLast30Days < 2 && !isVeryNew)
     return "emotional_disengagement";
-  }
 
-  // Plateau & boredom risk: established but frequency dropping
-  if (
-    daysSinceJoined >= 90 &&
-    (riskFlags.decliningFrequency || habitDecayVelocity < -0.3) &&
-    commitmentScore >= 40 &&
-    commitmentScore < 65
-  ) {
+  // Plateau & boredom risk: tenure 3+ months, attendance flattening or declining
+  if (daysSinceJoined >= 90 && (isDecliningCommitment || (visitsLast30Days <= 2 && daysSince <= 14)))
     return "plateau_boredom_risk";
-  }
 
-  // Momentum & identity: strong habit, consistent
-  if (daysSinceJoined >= 60 && commitmentScore >= 65 && visitsLast30Days >= 4) {
-    return "momentum_identity";
-  }
+  // Momentum & identity: established, consistent, high commitment
+  if (daysSinceJoined >= 60 && hasStrongHabit) return "momentum_identity";
 
-  // Habit formation: early but showing consistency
-  if (daysSinceJoined >= 14 && daysSinceJoined < 90 && commitmentScore >= 40) {
-    return "habit_formation";
-  }
+  // Habit formation: past first weeks, starting to come regularly
+  if (!isVeryNew && hasFormingHabit && daysSinceJoined <= 90) return "habit_formation";
 
-  // Onboarding vulnerability: new or fragile
-  if (daysSinceJoined < 30 || riskFlags.newMemberLowAttendance) {
-    return "onboarding_vulnerability";
-  }
+  // Onboarding vulnerability: first 2–4 weeks, high drop-off risk
+  if (isNew) return "onboarding_vulnerability";
 
-  // Default by commitment
-  if (commitmentScore >= 50) return "habit_formation";
-  if (daysSince >= 21) return "at_risk_silent_quit";
-  if (commitmentScore < 40 && daysSince >= 7) return "emotional_disengagement";
+  // Default at-risk if nothing else fits
+  if (isHighRisk || isLowCommitment) return "at_risk_silent_quit";
+  if (isLapsed) return "win_back_window";
 
   return "habit_formation";
 }
 
 /**
- * Derive emotional disengagement flags from risk flags and scores.
- * Used for proactive signalling (not just reactive churn).
+ * Get retention play for a stage (for display in insights and profile).
+ */
+export function getRetentionPlayForStage(stage: MemberStage): string {
+  return MEMBER_STAGE_PLAYS[stage] ?? "";
+}
+
+/**
+ * Flags indicating emotional disengagement (for display / coaching).
  */
 export function getEmotionalDisengagementFlags(
-  riskFlags: RiskFlags,
-  churnRiskLevel: ChurnRiskLevel,
-  commitmentScore: number,
-  habitDecayVelocity: number
+  riskFlags: string[] | Record<string, unknown> | undefined,
+  _churnLevel: string,
+  _score: number,
+  _habitDecayVelocity?: number
 ): string[] {
-  const flags: string[] = [];
-
-  if (riskFlags.noRecentVisits) {
-    flags.push("No recent visits (14+ days)");
+  if (Array.isArray(riskFlags)) return riskFlags;
+  if (riskFlags && typeof riskFlags === "object") {
+    return Object.keys(riskFlags).filter((k) => (riskFlags as Record<string, unknown>)[k]);
   }
-  if (riskFlags.rapidDecline) {
-    flags.push("Rapid attendance decline");
-  }
-  if (riskFlags.largeGap) {
-    flags.push("Large gap between visits");
-  }
-  if (riskFlags.inconsistentPattern) {
-    flags.push("Inconsistent attendance pattern");
-  }
-  if (riskFlags.newMemberLowAttendance) {
-    flags.push("New member low attendance");
-  }
-  if (riskFlags.decliningFrequency) {
-    flags.push("Declining visit frequency");
-  }
-  if (churnRiskLevel === "high" && commitmentScore < 40) {
-    flags.push("High churn risk with low commitment");
-  }
-  if (habitDecayVelocity < -0.5) {
-    flags.push("Habit decay velocity negative");
-  }
-  if (commitmentScore < 30 && !riskFlags.noRecentVisits) {
-    flags.push("Low commitment despite recent activity");
-  }
-
-  return flags;
+  return [];
 }
 
 /**
- * Habit decay index 0-100: higher = more decay.
- * Derived from commitment attendance decay (inverted) and decline velocity.
+ * Single index combining attendance decay and decline velocity (0–100 scale).
  */
 export function getHabitDecayIndex(
-  attendanceDecayScore: number,
-  declineVelocityScore: number
+  attendanceDecayScore?: number,
+  declineVelocity?: number
 ): number {
-  // attendanceDecayScore: 100 = no decay, 0 = full decay
-  const decayFromAttendance = 100 - attendanceDecayScore;
-  // declineVelocityScore: 100 = improving, 0 = declining
-  const decayFromVelocity = 100 - declineVelocityScore;
-  const index = Math.round((decayFromAttendance * 0.6 + decayFromVelocity * 0.4));
-  return Math.max(0, Math.min(100, index));
+  const attendance = attendanceDecayScore ?? 0;
+  const velocity = declineVelocity ?? 0;
+  return Math.round(Math.min(100, Math.max(0, (attendance + velocity) / 2)));
 }
 
 /**
- * Human-readable behaviour interpretation for coaches.
+ * Short behavioural interpretation text for the member profile.
  */
 export function getBehaviourInterpretation(
-  stage: MemberStage,
-  riskFlags: RiskFlags,
+  memberStage: MemberStage,
+  _riskFlags: string[] | Record<string, unknown> | undefined,
   churnProbability: number,
   habitDecayIndex: number,
   visitsLast30Days: number,
   daysSinceLastVisit: number | null
 ): string {
-  const parts: string[] = [];
-  const stageLabel = MEMBER_STAGE_LABELS[stage];
-
-  parts.push(`Member is in **${stageLabel}**.`);
-
-  if (churnProbability >= 50) {
-    parts.push(
-      `Churn probability is ${churnProbability}%—elevated risk of leaving.`
-    );
-  } else if (churnProbability >= 25) {
-    parts.push(
-      `Churn probability is ${churnProbability}%—worth monitoring.`
-    );
+  const play = MEMBER_STAGE_PLAYS[memberStage];
+  if (memberStage === "churned") return "Member has cancelled. " + (play ?? "");
+  if (memberStage === "win_back_window") return "In the win-back window. " + (play ?? "");
+  if (memberStage === "at_risk_silent_quit") {
+    if (churnProbability >= 70) return "High churn risk; prioritise contact. " + (play ?? "");
+    return "At-risk; silent quit risk. " + (play ?? "");
   }
-
-  if (habitDecayIndex >= 60) {
-    parts.push(
-      `Habit decay index is ${habitDecayIndex}/100—attendance habit is weakening.`
-    );
-  } else if (habitDecayIndex >= 40) {
-    parts.push(
-      `Habit decay index is ${habitDecayIndex}/100—some decline in consistency.`
-    );
-  }
-
-  const days = daysSinceLastVisit ?? 0;
-  if (days > 21) {
-    parts.push(`No visit in ${days} days—early intervention recommended.`);
-  } else if (days > 14) {
-    parts.push(`Last visit was ${days} days ago.`);
-  }
-
-  if (visitsLast30Days === 0 && days > 0) {
-    parts.push("No visits in the last 30 days.");
-  } else if (visitsLast30Days > 0) {
-    parts.push(`${visitsLast30Days} visit(s) in the last 30 days.`);
-  }
-
-  if (riskFlags.newMemberLowAttendance) {
-    parts.push("New member with low attendance—onboarding support may help.");
-  }
-  if (riskFlags.rapidDecline) {
-    parts.push("Attendance has dropped sharply vs previous period.");
-  }
-  if (riskFlags.largeGap) {
-    parts.push("There has been a long gap between visits.");
-  }
-  if (riskFlags.inconsistentPattern) {
-    parts.push("Visit pattern is inconsistent—habit may not be established.");
-  }
-
-  return parts.join(" ");
+  if (memberStage === "emotional_disengagement")
+    return "Emotional disengagement detected. " + (play ?? "");
+  if (memberStage === "plateau_boredom_risk") return "Plateau or boredom risk. " + (play ?? "");
+  if (memberStage === "onboarding_vulnerability") return "New member; onboarding critical. " + (play ?? "");
+  if (memberStage === "habit_formation") return "Building habit; support consistency. " + (play ?? "");
+  if (visitsLast30Days >= 4 && (daysSinceLastVisit ?? 999) <= 7)
+    return "Strong momentum; maintain identity and community. " + (play ?? "");
+  return "Engaged; continue appropriate touchpoints. " + (play ?? "");
 }

@@ -1,6 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { MEMBER_STAGES, MEMBER_STAGE_LABELS } from "@/lib/member-intelligence";
+import {
+  MEMBER_STAGES,
+  MEMBER_STAGE_LABELS,
+  MEMBER_STAGE_PLAYS,
+  getMemberStage,
+} from "@/lib/member-intelligence";
+import { calculateCommitmentScore } from "@/lib/commitment-score";
+import { calculateChurnRisk } from "@/lib/churn-risk";
+import { differenceInDays, format, parseISO, subDays } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -207,32 +216,92 @@ export async function GET(request: Request) {
       .eq("status", "active")
       .in("churn_risk_level", ["high", "medium"]);
 
-    // Member stages breakdown (count per stage)
-    const { data: membersByStage } = await supabase
+    // Member stages breakdown: use stored member_stage when set (from profile), else same logic as profile
+    const { data: membersForStages } = await supabase
       .from("members")
-      .select("member_stage")
+      .select("id, status, joined_date, last_visit_date, churn_risk_score, churn_risk_level, member_stage")
       .eq("gym_id", userProfile.gym_id);
+
+    const memberIds = membersForStages?.map((m) => m.id) ?? [];
+    const visitDatesByMember = new Map<string, string[]>();
+    if (memberIds.length > 0) {
+      const adminClient = createAdminClient();
+      const { data: activities } = await adminClient
+        .from("member_activities")
+        .select("member_id, activity_date")
+        .in("member_id", memberIds)
+        .eq("activity_type", "visit")
+        .limit(10000);
+      (activities ?? []).forEach((a: { member_id: string; activity_date: string }) => {
+        const list = visitDatesByMember.get(a.member_id) ?? [];
+        const d = typeof a.activity_date === "string" ? a.activity_date.slice(0, 10) : "";
+        if (d) list.push(d);
+        visitDatesByMember.set(a.member_id, list);
+      });
+    }
 
     const stageCounts: Record<string, number> = {};
     MEMBER_STAGES.forEach((s) => (stageCounts[s] = 0));
-    stageCounts.uncategorized = 0;
 
-    membersByStage?.forEach((m: { member_stage: string | null }) => {
-      if (m.member_stage && MEMBER_STAGES.includes(m.member_stage as typeof MEMBER_STAGES[number])) {
-        stageCounts[m.member_stage]++;
-      } else {
-        stageCounts.uncategorized++;
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+    const thirtyDaysAgoStr = format(subDays(today, 30), "yyyy-MM-dd");
+    type MemberRow = {
+      id: string;
+      status: string;
+      joined_date: string;
+      last_visit_date: string | null;
+      churn_risk_score: number;
+      churn_risk_level: string;
+      member_stage?: string | null;
+    };
+    membersForStages?.forEach((m: MemberRow) => {
+      const storedStage = m.member_stage?.trim();
+      if (storedStage && (MEMBER_STAGES as readonly string[]).includes(storedStage)) {
+        stageCounts[storedStage] = (stageCounts[storedStage] ?? 0) + 1;
+        return;
       }
+      const visitDates = visitDatesByMember.get(m.id) ?? [];
+      const commitmentResult = calculateCommitmentScore({
+        joinedDate: m.joined_date,
+        lastVisitDate: m.last_visit_date,
+        visitDates,
+        expectedVisitsPerWeek: 2,
+      });
+      const visitsLast30Days = visitDates.filter((d) => {
+        const ds = (d || "").slice(0, 10);
+        return ds >= thirtyDaysAgoStr && ds <= todayStr;
+      }).length;
+      const churnResult = calculateChurnRisk({
+        last_visit_date: m.last_visit_date,
+        joined_date: m.joined_date,
+        visits_last_30_days: visitsLast30Days,
+      });
+      const daysSinceJoined = differenceInDays(today, parseISO(m.joined_date));
+      const daysSinceLastVisit = m.last_visit_date
+        ? differenceInDays(today, parseISO(m.last_visit_date))
+        : null;
+      const stage = getMemberStage({
+        status: m.status,
+        churnRiskScore: churnResult.score,
+        churnRiskLevel: churnResult.level,
+        commitmentScore: commitmentResult.score,
+        habitDecayVelocity: commitmentResult.habitDecayVelocity,
+        daysSinceJoined,
+        daysSinceLastVisit,
+        visitsLast30Days,
+        riskFlags: commitmentResult.riskFlags,
+        attendanceDecayScore: commitmentResult.factorScores.attendanceDecay,
+      });
+      stageCounts[stage] = (stageCounts[stage] ?? 0) + 1;
     });
 
-    const memberStagesBreakdown: Array<{ stage: string; label: string; count: number }> = MEMBER_STAGES.map((stage) => ({
+    const memberStagesBreakdown: Array<{ stage: string; label: string; count: number; play: string }> = MEMBER_STAGES.map((stage) => ({
       stage,
       label: MEMBER_STAGE_LABELS[stage],
       count: stageCounts[stage] ?? 0,
+      play: MEMBER_STAGE_PLAYS[stage] ?? "",
     }));
-    if (stageCounts.uncategorized > 0) {
-      memberStagesBreakdown.push({ stage: "uncategorized", label: "Not yet calculated", count: stageCounts.uncategorized });
-    }
 
     // Campaign performance over time (grouped by day)
     const performanceByDay: Record<string, { emails: number; sms: number; automations: number; total: number }> = {};

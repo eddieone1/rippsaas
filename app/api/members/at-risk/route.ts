@@ -5,8 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { calculateCommitmentScore } from '@/lib/commitment-score';
 import { z } from 'zod';
 
-export const dynamic = "force-dynamic";
-
 const querySchema = z.object({
   riskLevel: z.enum(['all', 'high', 'medium', 'low']).default('all'),
   sortBy: z.enum(['commitment_score', 'churn_risk_score', 'last_visit_date', 'name']).default('commitment_score'),

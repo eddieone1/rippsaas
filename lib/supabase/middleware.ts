@@ -8,15 +8,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase env vars missing in middleware; skipping session update');
-    return redirectLegacyPaths(request, response);
-  }
-
-  try {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value;
@@ -56,26 +51,21 @@ export async function updateSession(request: NextRequest) {
           });
         },
       },
-    });
+    }
+  );
 
-    await supabase.auth.getUser();
-  } catch (error) {
-    console.error('Middleware updateSession error:', error);
-    return redirectLegacyPaths(request, response);
-  }
+  await supabase.auth.getUser();
 
-  return redirectLegacyPaths(request, response);
-}
-
-function redirectLegacyPaths(request: NextRequest, response: NextResponse): NextResponse {
+  // Redirect old /auth/login and /auth/signup paths to new routes
   const url = request.nextUrl.clone();
   if (url.pathname === '/auth/login') {
     url.pathname = '/login';
-    return NextResponse.redirect(url, 308);
+    return NextResponse.redirect(url, 308); // Permanent redirect
   }
   if (url.pathname === '/auth/signup') {
     url.pathname = '/signup';
-    return NextResponse.redirect(url, 308);
+    return NextResponse.redirect(url, 308); // Permanent redirect
   }
+
   return response;
 }

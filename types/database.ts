@@ -20,6 +20,9 @@ export interface Database {
           trial_ends_at: string | null;
           created_at: string;
           updated_at: string;
+          sender_name: string | null;
+          sender_email: string | null;
+          sms_from_number: string | null;
         };
         Insert: {
           id?: string;
@@ -31,6 +34,9 @@ export interface Database {
           trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          sender_name?: string | null;
+          sender_email?: string | null;
+          sms_from_number?: string | null;
         };
         Update: {
           id?: string;
@@ -42,6 +48,9 @@ export interface Database {
           trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          sender_name?: string | null;
+          sender_email?: string | null;
+          sms_from_number?: string | null;
         };
       };
       users: {
@@ -153,21 +162,17 @@ export interface Database {
           channel: 'email' | 'sms';
           template_id: string;
           status: 'active' | 'paused';
-          target_segment: 'low' | 'medium' | 'high' | 'all';
-          include_cancelled: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           gym_id: string;
           name: string;
-          trigger_type?: 'inactivity_threshold';
+          trigger_type: 'inactivity_threshold';
           trigger_days: number;
           channel: 'email' | 'sms';
           template_id: string;
           status?: 'active' | 'paused';
-          target_segment?: 'low' | 'medium' | 'high' | 'all';
-          include_cancelled?: boolean;
           created_at?: string;
         };
         Update: {
@@ -178,8 +183,6 @@ export interface Database {
           trigger_days?: number;
           channel?: 'email' | 'sms';
           template_id?: string;
-          target_segment?: 'low' | 'medium' | 'high' | 'all';
-          include_cancelled?: boolean;
           status?: 'active' | 'paused';
           created_at?: string;
         };
@@ -192,7 +195,6 @@ export interface Database {
           subject: string;
           body: string;
           channel: 'email' | 'sms';
-          template_key: string | null;
           created_at: string;
         };
         Insert: {
@@ -202,7 +204,6 @@ export interface Database {
           subject: string;
           body: string;
           channel: 'email' | 'sms';
-          template_key?: string | null;
           created_at?: string;
         };
         Update: {
@@ -212,7 +213,6 @@ export interface Database {
           subject?: string;
           body?: string;
           channel?: 'email' | 'sms';
-          template_key?: string | null;
           created_at?: string;
         };
       };

@@ -53,14 +53,21 @@ export async function POST(
       );
     }
 
-    // Get gym information with branding
+    // Get gym information with branding and sender identity
     const { data: gym } = await supabase
       .from("gyms")
-      .select("name, logo_url, brand_primary_color, brand_secondary_color")
+      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email")
       .eq("id", userProfile.gym_id)
       .single();
 
     const gymName = gym?.name || "your gym";
+
+    const emailFrom =
+      gym?.sender_email?.trim()
+        ? (gym.sender_name?.trim()
+            ? `${gym.sender_name.trim()} <${gym.sender_email.trim()}>`
+            : gym.sender_email.trim())
+        : undefined;
 
     // Define email templates
     const emailTemplates: Record<string, { subject: string; body: string }> = {
@@ -131,11 +138,12 @@ The team at {{gym_name}}`,
       gym_name: gymName,
     });
 
-    // Send email via Resend
+    // Send email via Resend (from gym sender identity when set)
     const { id: emailId, error: emailError } = await sendEmail({
       to: member.email,
       subject: emailSubject,
       body: emailBody,
+      from: emailFrom,
     });
 
     if (emailError) {

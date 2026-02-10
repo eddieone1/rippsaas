@@ -1,123 +1,73 @@
-/**
- * Route guards for role-based access control
- * 
- * Usage in Server Components:
- * ```tsx
- * import { requireRole } from '@/lib/auth/guards';
- * 
- * export default async function SettingsPage() {
- *   const { user, userProfile } = await requireRole('owner');
- *   // ... rest of component
- * }
- * ```
- */
+import { redirect } from "next/navigation";
+import { getGymContext } from "@/lib/supabase/get-gym-context";
+import type { Database } from "@/types/database";
 
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getGymContext } from '@/lib/supabase/get-gym-context';
-import type { UserRole } from './roles';
-import { canPerformAction } from './roles';
+type UserProfile = Database["public"]["Tables"]["users"]["Row"];
 
-type AuthUser = {
-  id: string;
-  email: string | undefined;
-};
-
-type UserProfile = {
-  id: string;
-  gym_id: string;
-  email: string;
-  full_name: string;
-  role: UserRole;
-};
-
-type AuthContext = {
-  user: AuthUser;
+export type AuthContext = {
   userProfile: UserProfile;
   gymId: string;
 };
 
 /**
- * Require authentication (any role)
- * Throws redirect if not authenticated
+ * Require authenticated user with a gym. Redirects to /login if not signed in or no gym.
+ * Use in layout and server components; in API routes this will send a redirect response.
  */
 export async function requireAuth(): Promise<AuthContext> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, userProfile, gymId } = await getGymContext();
 
-  if (!user) {
-    redirect('/login');
+  if (!user?.id) {
+    redirect("/login");
   }
 
-  const { userProfile, gymId } = await getGymContext();
-
-  if (!userProfile || !gymId) {
-    redirect('/onboarding/gym-info');
+  if (!gymId || !userProfile) {
+    redirect("/login");
   }
 
-  return {
-    user: { id: user.id, email: user.email },
-    userProfile: userProfile as UserProfile,
-    gymId,
-  };
+  return { userProfile, gymId };
 }
 
-/**
- * Require specific role
- * Throws redirect if user doesn't have required role
- */
-export async function requireRole(requiredRole: UserRole): Promise<AuthContext> {
-  const context = await requireAuth();
-
-  if (context.userProfile.role !== requiredRole && context.userProfile.role !== 'owner') {
-    // Owner can access everything, otherwise check exact match
-    if (context.userProfile.role !== requiredRole) {
-      redirect('/dashboard'); // Redirect to dashboard if insufficient permissions
-    }
-  }
-
-  return context;
-}
+const ACTION_ROLES: Record<string, ("owner" | "admin")[]> = {
+  manage_settings: ["owner"],
+  invite_users: ["owner"],
+};
 
 /**
- * Require minimum role level
- * Owner > Coach
- */
-export async function requireMinimumRole(minimumRole: UserRole): Promise<AuthContext> {
-  const context = await requireAuth();
-
-  if (minimumRole === 'owner' && context.userProfile.role !== 'owner') {
-    redirect('/dashboard');
-  }
-
-  // Coach minimum means both owner and coach can access
-  return context;
-}
-
-/**
- * Require ability to perform specific action
+ * Require auth and that the user has permission for the given action.
+ * Redirects on failure.
  */
 export async function requireAction(
-  action: 'manage_settings' | 'manage_billing' | 'invite_users' | 'view_members' | 'run_campaigns'
+  action: keyof typeof ACTION_ROLES
 ): Promise<AuthContext> {
-  const context = await requireAuth();
-
-  if (!canPerformAction(context.userProfile.role, action)) {
-    redirect('/dashboard');
+  const ctx = await requireAuth();
+  const allowedRoles = ACTION_ROLES[action];
+  if (
+    !allowedRoles?.length ||
+    !ctx.userProfile.role ||
+    !allowedRoles.includes(ctx.userProfile.role)
+  ) {
+    redirect("/dashboard");
   }
-
-  return context;
+  return ctx;
 }
 
 /**
- * Get auth context without throwing (for conditional rendering)
+ * Require auth and that the user has the given role.
+ * For "coach": allows "coach" or "admin" (admin can use coach features until coach role exists in DB).
  */
-export async function getAuthContext(): Promise<AuthContext | null> {
-  try {
-    return await requireAuth();
-  } catch {
-    return null;
+export async function requireRole(
+  role: "owner" | "admin" | "coach"
+): Promise<AuthContext> {
+  const ctx = await requireAuth();
+  const userRole = ctx.userProfile.role;
+
+  if (role === "coach") {
+    if (userRole === "coach" || userRole === "admin") {
+      return ctx;
+    }
+  } else if (userRole === role) {
+    return ctx;
   }
+
+  redirect("/dashboard");
 }

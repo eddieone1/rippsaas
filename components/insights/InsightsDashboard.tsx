@@ -37,6 +37,7 @@ interface InsightsData {
     stage: string;
     label: string;
     count: number;
+    play?: string;
   }>;
   campaignPerformance: Array<{
     date: string;
@@ -211,14 +212,14 @@ export default function InsightsDashboard() {
       {/* Tab content: only the active tab panel is shown */}
       {activeTab === "engagement" && (
         <div className="space-y-6">
-          {/* Member stages breakdown */}
+          {/* Member stages breakdown – Habit Lifecycle Mapping + retention plays */}
           {memberStagesBreakdown.length > 0 && (
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Member stages</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">Member stages</h3>
               <p className="text-xs text-gray-500 mb-4">
-                Distribution of members across retention stages. Use this to prioritise onboarding, at-risk outreach, and win-back.
+                Habit lifecycle mapping: each stage suggests a subtle retention play.
               </p>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {memberStagesBreakdown.map((item) => {
                   const pct = totalMembersForStages > 0 ? Math.round((item.count / totalMembersForStages) * 100) : 0;
                   const barColor =
@@ -230,24 +231,31 @@ export default function InsightsDashboard() {
                           ? "bg-amber-500"
                           : item.stage === "momentum_identity" || item.stage === "habit_formation"
                             ? "bg-emerald-500"
-                            : item.stage === "uncategorized"
+                            : item.stage === "churned"
                               ? "bg-gray-400"
                               : "bg-sky-500";
                   return (
-                    <div key={item.stage} className="flex items-center gap-3">
-                      <div className="w-40 flex-shrink-0 text-sm text-gray-700">{item.label}</div>
-                      <div className="flex-1 min-w-0 h-6 bg-gray-100 rounded overflow-hidden flex">
-                        <div
-                          className={`h-full ${barColor} transition-all`}
-                          style={{ width: `${Math.max(0, pct)}%` }}
-                        />
+                    <div key={item.stage} className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-44 flex-shrink-0 text-sm font-medium text-gray-700">{item.label}</div>
+                        <div className="flex-1 min-w-0 h-6 bg-gray-100 rounded overflow-hidden flex">
+                          <div
+                            className={`h-full ${barColor} transition-all`}
+                            style={{ width: `${Math.max(0, pct)}%` }}
+                          />
+                        </div>
+                        <div className="w-14 flex-shrink-0 text-right text-sm font-medium text-gray-900">
+                          {item.count}
+                          {totalMembersForStages > 0 && (
+                            <span className="text-gray-500 font-normal ml-1">({pct}%)</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="w-16 flex-shrink-0 text-right text-sm font-medium text-gray-900">
-                        {item.count}
-                        {totalMembersForStages > 0 && (
-                          <span className="text-gray-500 font-normal ml-1">({pct}%)</span>
-                        )}
-                      </div>
+                      {item.play && (
+                        <p className="text-xs text-gray-500 pl-1 ml-0 w-full max-w-2xl" title={item.play}>
+                          {item.play}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

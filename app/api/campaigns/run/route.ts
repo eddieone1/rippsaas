@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { sendEmail, replaceTemplateVariables, createBrandedEmailTemplate } from "@/lib/email/resend";
+import { sendSms } from "@/lib/sms/twilio";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
@@ -40,10 +41,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get gym info with branding
+    // Get gym info with branding and sender identity
     const { data: gym } = await supabase
       .from("gyms")
-      .select("name, logo_url, brand_primary_color, brand_secondary_color")
+      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email, sms_from_number")
       .eq("id", userProfile.gym_id)
       .single();
 
@@ -249,21 +250,33 @@ export async function POST(request: Request) {
           gym_name: gym.name,
         });
 
-        // Send email
+        // Resend "from": use gym sender identity if set
+        const emailFrom =
+          gym?.sender_email?.trim()
+            ? (gym.sender_name?.trim()
+                ? `${gym.sender_name.trim()} <${gym.sender_email.trim()}>`
+                : gym.sender_email.trim())
+            : undefined;
+
         const { id: emailId, error: emailError } = await sendEmail({
           to: member.email!,
           subject: messageSubject,
           body: messageBody,
+          from: emailFrom,
         });
 
         externalId = emailId;
         sendError = emailError ? String(emailError) : null;
         sendStatus = emailError ? "failed" : "sent";
       } else if (channel === "sms") {
-        // TODO: Implement SMS sending when SMS provider is integrated
-        // For now, we'll just log and mark as sent
-        console.log(`SMS would be sent to ${member.phone}: ${messageSubject} - ${messageBodyPlain}`);
-        sendStatus = "sent";
+        const { id: smsId, error: smsErr } = await sendSms({
+          to: member.phone!,
+          body: messageBodyPlain,
+          from: gym?.sms_from_number?.trim() || undefined,
+        });
+        externalId = smsId;
+        sendError = smsErr ?? null;
+        sendStatus = smsErr ? "failed" : "sent";
       }
 
       // Record campaign send
