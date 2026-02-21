@@ -42,8 +42,26 @@ export default function ResetPasswordForm() {
         return;
       }
 
-      // Redirect to dashboard after successful password reset
-      router.push("/dashboard");
+      // Get user info to check if they have a gym
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("gym_id")
+          .eq("id", user.id)
+          .single();
+
+        // Redirect based on whether user has completed onboarding
+        if (userProfile?.gym_id) {
+          router.push("/dashboard");
+        } else {
+          router.push("/onboarding/gym-info");
+        }
+      } else {
+        // Fallback to dashboard (it will handle redirect if needed)
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
@@ -72,7 +90,7 @@ export default function ResetPasswordForm() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="••••••••"
           />
           <p className="mt-1 text-xs text-gray-500">{PASSWORD_RULES_TEXT}</p>
@@ -89,7 +107,7 @@ export default function ResetPasswordForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="••••••••"
           />
         </div>
@@ -99,7 +117,7 @@ export default function ResetPasswordForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Updating password..." : "Update password"}
         </button>
@@ -108,7 +126,7 @@ export default function ResetPasswordForm() {
       <div className="text-center">
         <Link
           href="/login"
-          className="text-sm font-medium text-blue-600 hover:text-blue-500"
+          className="text-sm font-medium text-lime-600 hover:text-lime-500"
         >
           ← Back to sign in
         </Link>

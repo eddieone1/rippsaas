@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/auth/guards";
+import { handleApiError } from "@/lib/api/response";
 import {
   MEMBER_STAGES,
   MEMBER_STAGE_LABELS,
@@ -19,28 +21,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   try {
+    const { gymId } = await requireApiAuth();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
-    }
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -61,7 +43,7 @@ export async function GET(request: Request) {
     const { data: campaigns } = await supabase
       .from("campaigns")
       .select("id, channel")
-      .eq("gym_id", userProfile.gym_id);
+      .eq("gym_id", gymId);
 
     const campaignIds = campaigns?.map((c) => c.id) || [];
 
@@ -70,7 +52,7 @@ export async function GET(request: Request) {
     if (campaignIds.length > 0) {
       const { data: sends } = await supabase
         .from("campaign_sends")
-        .select("sent_at, channel, member_re_engaged, campaigns!inner(id, channel)")
+        .select("sent_at, channel, member_re_engaged, member_id, campaigns!inner(id, channel)")
         .in("campaign_id", campaignIds)
         .gte("sent_at", startDate.toISOString())
         .order("sent_at", { ascending: false });
@@ -98,8 +80,8 @@ export async function GET(request: Request) {
     // Inactive + cancelled count as churned; churn month = month of last_visit_date (inactive) or last_visit_date else updated_at (cancelled).
     const { data: membersForChurn } = await supabase
       .from("members")
-      .select("id, created_at, updated_at, status, last_visit_date")
-      .eq("gym_id", userProfile.gym_id);
+      .select("id, first_name, last_name, email, created_at, updated_at, status, last_visit_date")
+      .eq("gym_id", gymId);
 
     type ChurnMonth = string; // YYYY-MM
     const toYYYYMM = (dateStr: string | Date | null | undefined): ChurnMonth | null => {
@@ -136,10 +118,18 @@ export async function GET(request: Request) {
     };
 
     const churnedByMonth: Record<ChurnMonth, number> = {};
+    const churnedMembersByMonth: Record<ChurnMonth, Array<{ id: string; name: string; email: string | null; status: string }>> = {};
     (membersForChurn || []).forEach((m: any) => {
       const month = getChurnMonth(m);
       if (month) {
         churnedByMonth[month] = (churnedByMonth[month] || 0) + 1;
+        if (!churnedMembersByMonth[month]) churnedMembersByMonth[month] = [];
+        churnedMembersByMonth[month].push({
+          id: m.id,
+          name: `${m.first_name || ""} ${m.last_name || ""}`.trim() || "Unknown",
+          email: m.email ?? null,
+          status: m.status,
+        });
       }
     });
 
@@ -212,7 +202,7 @@ export async function GET(request: Request) {
     const { count: membersAtRisk } = await supabase
       .from("members")
       .select("*", { count: "exact", head: true })
-      .eq("gym_id", userProfile.gym_id)
+      .eq("gym_id", gymId)
       .eq("status", "active")
       .in("churn_risk_level", ["high", "medium"]);
 
@@ -220,7 +210,7 @@ export async function GET(request: Request) {
     const { data: membersForStages } = await supabase
       .from("members")
       .select("id, status, joined_date, last_visit_date, churn_risk_score, churn_risk_level, member_stage")
-      .eq("gym_id", userProfile.gym_id);
+      .eq("gym_id", gymId);
 
     const memberIds = membersForStages?.map((m) => m.id) ?? [];
     const visitDatesByMember = new Map<string, string[]>();
@@ -275,7 +265,7 @@ export async function GET(request: Request) {
       const churnResult = calculateChurnRisk({
         last_visit_date: m.last_visit_date,
         joined_date: m.joined_date,
-        visits_last_30_days: visitsLast30Days,
+        commitment_score: commitmentResult.score,
       });
       const daysSinceJoined = differenceInDays(today, parseISO(m.joined_date));
       const daysSinceLastVisit = m.last_visit_date
@@ -359,7 +349,7 @@ export async function GET(request: Request) {
         const { data: membersInGym } = await supabase
           .from("members")
           .select("id, first_name, last_name")
-          .eq("gym_id", userProfile.gym_id)
+          .eq("gym_id", gymId)
           .in("id", memberIds);
         const memberMap = new Map((membersInGym ?? []).map((m: any) => [m.id, m]));
         recentActivitiesData = (memberActivities ?? [])
@@ -442,12 +432,52 @@ export async function GET(request: Request) {
 
     const finalRecentActivities = recentActivities.slice(0, 5);
 
+    // Revenue saved (from re-engaged members in last 90 days)
+    let reEngagedMemberIds = new Set<string>();
+    if (campaignIds.length > 0) {
+      const ninetyDaysAgoStr = new Date();
+      ninetyDaysAgoStr.setDate(ninetyDaysAgoStr.getDate() - 90);
+      const { data: reEngagedSends } = await supabase
+        .from("campaign_sends")
+        .select("member_id")
+        .in("campaign_id", campaignIds)
+        .eq("member_re_engaged", true)
+        .gte("sent_at", ninetyDaysAgoStr.toISOString());
+      reEngagedMemberIds = new Set((reEngagedSends ?? []).map((s: any) => s.member_id).filter(Boolean));
+    }
+    const { data: membershipTypes } = await supabase
+      .from("membership_types")
+      .select("id, price, billing_frequency")
+      .eq("gym_id", gymId)
+      .eq("is_active", true);
+    const membershipTypeMap = new Map((membershipTypes ?? []).map((mt: any) => [mt.id, mt]));
+    const getMonthlyRevenue = (m: any): number => {
+      if (!m.membership_type_id) return 30;
+      const mt = membershipTypeMap.get(m.membership_type_id);
+      if (!mt?.price) return 30;
+      const price = Number(mt.price);
+      const freq = (mt.billing_frequency || "monthly").toString();
+      if (freq === "monthly") return price;
+      if (freq === "quarterly") return price / 3;
+      if (freq === "yearly") return price / 12;
+      return price;
+    };
+    const { data: reEngagedMembers } = await supabase
+      .from("members")
+      .select("id, membership_type_id")
+      .eq("gym_id", gymId)
+      .in("id", Array.from(reEngagedMemberIds));
+    const revenueSaved = (reEngagedMembers ?? []).reduce((sum, m) => sum + getMonthlyRevenue(m), 0);
+
     // Always return full shape so the frontend never gets undefined fields
     return NextResponse.json({
       engagementRate: engagementRate ?? 0,
+      membersSaved: reEngagedMemberIds.size,
+      revenueSaved: Math.round(revenueSaved),
       engagementBreakdown: engagementBreakdown ?? { emails: 0, sms: 0, automations: 0 },
       monthlyChurnRate: monthlyChurnRate ?? 0,
       monthlyChurnRateTimeSeries: monthlyChurnRateTimeSeries ?? [],
+      churnedMembersByMonth: churnedMembersByMonth ?? {},
       campaignsSent7d: campaignsSent7d ?? 0,
       campaignsBreakdown: campaignsBreakdown ?? { emails: 0, sms: 0, automations: 0 },
       membersAtRisk: membersAtRisk ?? 0,
@@ -456,10 +486,6 @@ export async function GET(request: Request) {
       recentActivities: finalRecentActivities ?? [],
     });
   } catch (error) {
-    console.error("Get insights dashboard error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Get insights dashboard error");
   }
 }

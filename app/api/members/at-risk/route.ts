@@ -7,7 +7,8 @@ import { z } from 'zod';
 
 const querySchema = z.object({
   riskLevel: z.enum(['all', 'high', 'medium', 'low']).default('all'),
-  sortBy: z.enum(['commitment_score', 'churn_risk_score', 'last_visit_date', 'name']).default('commitment_score'),
+  assigned: z.enum(['all', 'assigned', 'unassigned']).default('all'),
+  sortBy: z.enum(['commitment_score', 'churn_risk_score', 'last_visit_date', 'last_contacted', 'name']).default('commitment_score'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const params = querySchema.parse({
       riskLevel: searchParams.get('riskLevel') || 'all',
+      assigned: searchParams.get('assigned') || 'all',
       sortBy: searchParams.get('sortBy') || 'commitment_score',
       sortOrder: searchParams.get('sortOrder') || 'asc',
       page: searchParams.get('page') || '1',
@@ -65,20 +67,55 @@ export async function GET(request: Request) {
       query = query.eq('churn_risk_level', params.riskLevel);
     }
 
+    // Assigned filter: fetch at-risk IDs, filter by coach assignment
+    let idsToFetch = null as string[] | null;
+    if (params.assigned !== 'all') {
+      const idsQuery = adminClient
+        .from('members')
+        .select('id')
+        .eq('gym_id', gymId)
+        .eq('status', 'active')
+        .in('churn_risk_level', ['high', 'medium', 'low']);
+      const riskFilteredQuery = params.riskLevel === 'all' ? idsQuery : idsQuery.eq('churn_risk_level', params.riskLevel);
+      const { data: atRiskRows } = await riskFilteredQuery;
+      const atRiskIds = atRiskRows?.map((r: { id: string }) => r.id) ?? [];
+      const { data: coachRows } = await adminClient
+        .from('member_coaches')
+        .select('member_id')
+        .in('member_id', atRiskIds);
+      const assignedSet = new Set(coachRows?.map((r: { member_id: string }) => r.member_id) ?? []);
+      idsToFetch = params.assigned === 'assigned'
+        ? atRiskIds.filter((id) => assignedSet.has(id))
+        : atRiskIds.filter((id) => !assignedSet.has(id));
+      if (idsToFetch.length === 0) {
+        return NextResponse.json({
+          members: [],
+          total: 0,
+          page: params.page,
+          limit: params.limit,
+          totalPages: 0,
+        });
+      }
+      query = query.in('id', idsToFetch);
+    }
+
     // Apply sorting
     const sortAscending = params.sortOrder === 'asc';
     switch (params.sortBy) {
       case 'commitment_score':
         query = query.order('commitment_score', { ascending: sortAscending, nullsFirst: false });
-        query = query.order('churn_risk_score', { ascending: false }); // Secondary sort
+        query = query.order('churn_risk_score', { ascending: false });
         break;
       case 'churn_risk_score':
-        query = query.order('churn_risk_score', { ascending: !sortAscending }); // Higher risk first
+        query = query.order('churn_risk_score', { ascending: !sortAscending });
         query = query.order('commitment_score', { ascending: true, nullsFirst: false });
         break;
       case 'last_visit_date':
         query = query.order('last_visit_date', { ascending: sortAscending, nullsFirst: true });
         query = query.order('churn_risk_score', { ascending: false });
+        break;
+      case 'last_contacted':
+        query = query.order('last_visit_date', { ascending: sortAscending, nullsFirst: true });
         break;
       case 'name':
         query = query.order('last_name', { ascending: sortAscending });
@@ -109,7 +146,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get total count for pagination
+    // Get total count for pagination (respect assigned filter)
     let countQuery = adminClient
       .from('members')
       .select('*', { count: 'exact', head: true })
@@ -119,6 +156,9 @@ export async function GET(request: Request) {
 
     if (params.riskLevel !== 'all') {
       countQuery = countQuery.eq('churn_risk_level', params.riskLevel);
+    }
+    if (params.assigned !== 'all' && idsToFetch) {
+      countQuery = countQuery.in('id', idsToFetch);
     }
 
     const { count } = await countQuery;
@@ -145,6 +185,31 @@ export async function GET(request: Request) {
           email: assignment.users.email,
         });
       }
+    });
+
+    // Last contacted: max of campaign_sends.sent_at and coach_touches.created_at per member
+    const { data: campaigns } = await supabase.from('campaigns').select('id').eq('gym_id', gymId);
+    const campaignIds = campaigns?.map((c) => c.id) ?? [];
+    const lastContactByMember = new Map<string, string>();
+    if (campaignIds.length > 0) {
+      const { data: sends } = await supabase
+        .from('campaign_sends')
+        .select('member_id, sent_at')
+        .in('campaign_id', campaignIds)
+        .in('member_id', memberIds);
+      sends?.forEach((s: { member_id: string; sent_at: string }) => {
+        const cur = lastContactByMember.get(s.member_id);
+        if (!cur || s.sent_at > cur) lastContactByMember.set(s.member_id, s.sent_at);
+      });
+    }
+    const { data: touches } = await adminClient
+      .from('coach_touches')
+      .select('member_id, created_at')
+      .eq('gym_id', gymId)
+      .in('member_id', memberIds);
+    touches?.forEach((t: { member_id: string; created_at: string }) => {
+      const cur = lastContactByMember.get(t.member_id);
+      if (!cur || t.created_at > cur) lastContactByMember.set(t.member_id, t.created_at);
     });
 
     // Fetch visit history for commitment score calculation (if needed)
@@ -212,10 +277,11 @@ export async function GET(request: Request) {
       });
     }
 
-    // Format response with coach assignments
+    // Format response with coach assignments and last_contacted
     const formattedMembers = members.map((member) => ({
       ...member,
       coach: coachMap.get(member.id) || null,
+      last_contacted_at: lastContactByMember.get(member.id) || null,
     }));
 
     return NextResponse.json({

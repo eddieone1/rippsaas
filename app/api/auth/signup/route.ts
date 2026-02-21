@@ -46,17 +46,55 @@ export async function POST(request: Request) {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
 
-    const { data: gymData, error: gymError } = await adminClient
+    // First, try to insert with client_count_range
+    let gymInsert: {
+      name: string;
+      owner_email: string;
+      subscription_status: string;
+      trial_ends_at: string;
+      client_count_range?: string;
+    } = {
+      name: "My Gym", // Will be updated in onboarding
+      owner_email: email,
+      subscription_status: "trialing",
+      trial_ends_at: trialEndsAt.toISOString(),
+    };
+
+    // Add client_count_range if provided
+    if (clientCount) {
+      gymInsert.client_count_range = clientCount;
+    }
+
+    let { data: gymData, error: gymError } = await adminClient
       .from("gyms")
-      .insert({
-        name: "My Gym", // Will be updated in onboarding
-        owner_email: email,
-        subscription_status: "trialing",
-        trial_ends_at: trialEndsAt.toISOString(),
-        client_count_range: clientCount, // Store client count range
-      })
+      .insert(gymInsert)
       .select()
       .single();
+
+    // If error is due to missing column, retry without client_count_range
+    if (gymError && gymError.message.includes("client_count_range")) {
+      console.warn("client_count_range column not found, creating gym without it. Migration 006 needs to be applied.");
+      // Retry without client_count_range
+      const { client_count_range, ...gymInsertWithoutClientCount } = gymInsert;
+      const retryResult = await adminClient
+        .from("gyms")
+        .insert(gymInsertWithoutClientCount)
+        .select()
+        .single();
+      
+      gymData = retryResult.data;
+      gymError = retryResult.error;
+      
+      if (gymError) {
+        return NextResponse.json(
+          { 
+            error: `Failed to create gym: ${gymError.message}`,
+            note: "Note: Migration 006_add_client_count_range.sql should be applied to store client count data."
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     if (gymError) {
       // Clean up: delete the auth user if gym creation fails

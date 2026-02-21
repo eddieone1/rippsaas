@@ -9,6 +9,7 @@ import {
   getEmotionalDisengagementFlags,
   getHabitDecayIndex,
   getBehaviourInterpretation,
+  formatFlagKeyForDisplay,
   MEMBER_STAGE_LABELS,
 } from '@/lib/member-intelligence';
 import { differenceInDays, format, parseISO, subDays, formatISO } from 'date-fns';
@@ -84,6 +85,7 @@ export async function GET(
     const churnResult = calculateChurnRisk({
       last_visit_date: member.last_visit_date,
       joined_date: member.joined_date,
+      commitment_score: commitmentResult.score,
       visits_last_30_days: visitsLast30Days,
     });
     const churnProbability = churnResult.score;
@@ -101,7 +103,7 @@ export async function GET(
       attendanceDecayScore: commitmentResult.factorScores.attendanceDecay,
     });
 
-    const emotionalDisengagementFlags = getEmotionalDisengagementFlags(
+    const rawFlags = getEmotionalDisengagementFlags(
       commitmentResult.riskFlags,
       churnResult.level,
       commitmentResult.score,
@@ -113,14 +115,21 @@ export async function GET(
       commitmentResult.factorScores.declineVelocity
     );
 
+    // Payment failure stub: use days_payment_late or missed_payments when available
+    const daysLate = (member as { days_payment_late?: number | null }).days_payment_late ?? 0;
+    const missedPayments = (member as { missed_payments_count?: number | null }).missed_payments_count ?? 0;
+    const paymentFailureCount = daysLate > 0 || missedPayments > 0 ? 1 : 0;
+
     const behaviourInterpretation = getBehaviourInterpretation(
       memberStage,
       commitmentResult.riskFlags,
       churnProbability,
       habitDecayIndex,
       visitsLast30Days,
-      daysSinceLastVisit
+      daysSinceLastVisit,
+      paymentFailureCount
     );
+    const emotionalDisengagementFlags = rawFlags.map((key) => formatFlagKeyForDisplay(key));
 
     // Update stored commitment + intelligence (async, non-blocking)
     void Promise.resolve(
@@ -242,6 +251,39 @@ export async function GET(
           channel: campaign?.channel,
           reEngaged: send.member_re_engaged,
           outcome: send.outcome,
+        },
+      });
+    });
+
+    // Add coach touches
+    const { data: coachTouches } = await adminClient
+      .from('coach_touches')
+      .select('id, coach_id, channel, type, outcome, notes, created_at')
+      .eq('member_id', memberId)
+      .order('created_at', { ascending: false });
+
+    const coachNames = new Map<string, string>();
+    if (coachTouches && coachTouches.length > 0) {
+      const coachIds = Array.from(new Set(coachTouches.map((t: any) => t.coach_id)));
+      const { data: coaches } = await adminClient
+        .from('users')
+        .select('id, full_name')
+        .in('id', coachIds);
+      coaches?.forEach((c: any) => coachNames.set(c.id, c.full_name || 'Unknown'));
+    }
+
+    coachTouches?.forEach((touch: any) => {
+      const coachName = coachNames.get(touch.coach_id) || 'Coach';
+      const dateStr = touch.created_at?.split('T')[0] || touch.created_at;
+      engagementHistory.push({
+        type: 'coach_touch',
+        date: dateStr,
+        title: `Coach touch (${touch.channel?.replace('_', ' ') || 'contact'})`,
+        description: `${coachName}: ${touch.outcome?.replace('_', ' ') || ''}${touch.notes ? ` — ${touch.notes}` : ''}`,
+        metadata: {
+          channel: touch.channel,
+          outcome: touch.outcome,
+          coachName: coachNames.get(touch.coach_id),
         },
       });
     });

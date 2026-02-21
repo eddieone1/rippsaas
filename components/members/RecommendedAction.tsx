@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
-
 interface RecommendedActionProps {
   action: string;
   priority: "high" | "medium" | "low";
   reason: string;
   suggestedCampaign?: string;
   memberId: string;
+  /** When set, "Send X Campaign" opens this modal instead of going to campaigns page */
+  onRunCampaign?: () => void;
 }
 
 /**
@@ -22,6 +22,7 @@ export default function RecommendedAction({
   reason,
   suggestedCampaign,
   memberId,
+  onRunCampaign,
 }: RecommendedActionProps) {
   const priorityStyles = {
     high: {
@@ -37,10 +38,10 @@ export default function RecommendedAction({
       badge: "bg-yellow-100 text-yellow-800",
     },
     low: {
-      border: "border-blue-300",
-      bg: "bg-blue-50",
-      text: "text-blue-900",
-      badge: "bg-blue-100 text-blue-800",
+      border: "border-lime-300",
+      bg: "bg-lime-50",
+      text: "text-lime-900",
+      badge: "bg-lime-100 text-lime-800",
     },
   };
 
@@ -68,12 +69,22 @@ export default function RecommendedAction({
 
       {suggestedCampaign && (
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <Link
-            href={`/campaigns?memberId=${memberId}&suggested=${encodeURIComponent(suggestedCampaign)}`}
-            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            Send {suggestedCampaign} Campaign →
-          </Link>
+          {onRunCampaign ? (
+            <button
+              type="button"
+              onClick={onRunCampaign}
+              className="inline-flex items-center rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 transition-colors"
+            >
+              Send {suggestedCampaign} →
+            </button>
+          ) : (
+            <a
+              href={`/plays?memberId=${memberId}&suggested=${encodeURIComponent(suggestedCampaign)}`}
+              className="inline-flex items-center rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 transition-colors"
+            >
+              Send {suggestedCampaign} →
+            </a>
+          )}
         </div>
       )}
     </div>

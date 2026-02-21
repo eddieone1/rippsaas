@@ -18,7 +18,7 @@ export default async function MemberUploadPage() {
         </p>
       </div>
 
-      <div className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-white to-blue-50/40 p-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]">
+      <div className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-white to-lime-50/40 p-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]">
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-200/60">
             <svg className="h-6 w-6 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">

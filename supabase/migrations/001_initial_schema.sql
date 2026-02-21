@@ -143,7 +143,7 @@ CREATE POLICY "Users can update their own gym"
 -- Users: users can read/update their own profile
 CREATE POLICY "Users can view their own profile"
   ON users FOR SELECT
-  USING (id = auth.uid() OR gym_id IN (SELECT gym_id FROM users WHERE id = auth.uid()));
+  USING (id = auth.uid());
 
 CREATE POLICY "Users can update their own profile"
   ON users FOR UPDATE

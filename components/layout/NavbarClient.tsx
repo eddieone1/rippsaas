@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "./LogoutButton";
@@ -15,13 +16,24 @@ interface Branding {
 
 export default function NavbarClient({ 
   branding,
-  userRole 
+  userRole,
+  gymId,
 }: { 
   branding?: Branding | null;
   userRole?: UserRole | null;
+  gymId?: string | null;
 }) {
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+
+  useEffect(() => {
+    if (!gymId) return;
+    fetch("/api/approvals/count")
+      .then((r) => r.json())
+      .then((d) => setPendingApprovals(d.count ?? 0))
+      .catch(() => {});
+  }, [gymId]);
   const pathname = usePathname();
-  const primaryColor = branding?.brand_primary_color || "#2563EB";
+  const primaryColor = branding?.brand_primary_color || "#84cc16";
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -41,12 +53,16 @@ export default function NavbarClient({
                   <img
                     src={branding.logo_url}
                     alt={branding.gym_name || "Gym logo"}
-                    className="h-10 w-auto object-contain max-w-[150px]"
+                    className="h-14 w-auto object-contain max-w-[200px]"
                   />
                 </Link>
               ) : (
-                <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-                  Rip
+                <Link href="/dashboard" className="flex items-center">
+                  <img
+                    src="/rip dashboard logo - Edited.png"
+                    alt="Rip logo"
+                    className="h-14 w-auto object-contain max-w-[200px]"
+                  />
                 </Link>
               )}
             </div>
@@ -56,7 +72,7 @@ export default function NavbarClient({
                 className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                   isActive("/dashboard")
                     ? `border-[${primaryColor}] text-gray-900`
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                 }`}
                 style={{
                   borderBottomColor: isActive("/dashboard") ? primaryColor : undefined,
@@ -70,7 +86,7 @@ export default function NavbarClient({
                 className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                   isActive("/members")
                     ? `border-[${primaryColor}] text-gray-900`
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                 }`}
                 style={{
                   borderBottomColor: isActive("/members") ? primaryColor : undefined,
@@ -81,56 +97,51 @@ export default function NavbarClient({
               <Link
                 href="/insights"
                 className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                  isActive("/insights")
+                  isActive("/insights") || isActive("/roi")
                     ? `border-[${primaryColor}] text-gray-900`
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                 }`}
                 style={{
-                  borderBottomColor: isActive("/insights") ? primaryColor : undefined,
+                  borderBottomColor: isActive("/insights") || isActive("/roi") ? primaryColor : undefined,
                 }}
               >
                 Insights
               </Link>
               <Link
-                href="/roi"
-                className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                  isActive("/roi")
-                    ? `border-[${primaryColor}] text-gray-900`
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                }`}
-                style={{
-                  borderBottomColor: isActive("/roi") ? primaryColor : undefined,
-                }}
-              >
-                ROI
-              </Link>
-              <Link
-                href="/campaigns"
+                href="/plays"
                 data-tour="campaigns-nav"
-                className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                  isActive("/campaigns")
+                className={`inline-flex items-center gap-1.5 border-b-2 px-1 pt-1 text-sm font-medium ${
+                  isActive("/plays") || isActive("/campaigns") || isActive("/approvals") || isActive("/logs")
                     ? `border-[${primaryColor}] text-gray-900`
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                 }`}
                 style={{
-                  borderBottomColor: isActive("/campaigns") ? primaryColor : undefined,
+                  borderBottomColor: isActive("/plays") || isActive("/campaigns") || isActive("/approvals") || isActive("/logs") ? primaryColor : undefined,
                 }}
               >
-                Campaigns
+                Plays
+                {pendingApprovals > 0 && (
+                  <span
+                    title={`${pendingApprovals} pending approval${pendingApprovals !== 1 ? "s" : ""}`}
+                    className="inline-flex items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white"
+                  >
+                    {pendingApprovals > 99 ? "99+" : pendingApprovals}
+                  </span>
+                )}
               </Link>
               {(userRole === 'coach' || userRole === 'owner') && (
                 <Link
-                  href="/coach/playbook"
+                  href="/coach-accountability"
                   className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                    isActive("/coach/playbook")
+                    isActive("/coach-accountability")
                       ? `border-[${primaryColor}] text-gray-900`
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                   }`}
                   style={{
-                    borderBottomColor: isActive("/coach/playbook") ? primaryColor : undefined,
+                    borderBottomColor: isActive("/coach-accountability") ? primaryColor : undefined,
                   }}
                 >
-                  Playbook
+                  Coach Accountability
                 </Link>
               )}
               {userRole === 'coach' && (
@@ -139,7 +150,7 @@ export default function NavbarClient({
                   className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                     isActive("/coach/inbox")
                       ? `border-[${primaryColor}] text-gray-900`
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                   }`}
                   style={{
                     borderBottomColor: isActive("/coach/inbox") ? primaryColor : undefined,
@@ -155,7 +166,7 @@ export default function NavbarClient({
                   className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                     isActive("/settings")
                       ? `border-[${primaryColor}] text-gray-900`
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      : "border-transparent text-gray-600 hover:border-lime-300 hover:text-gray-900"
                   }`}
                   style={{
                     borderBottomColor: isActive("/settings") ? primaryColor : undefined,

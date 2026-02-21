@@ -1,20 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireApiAuth } from "@/lib/auth/guards";
+import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 import { sendEmail, replaceTemplateVariables, createBrandedEmailTemplate } from "@/lib/email/resend";
 import { sendSms } from "@/lib/sms/twilio";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   try {
+    const { gymId } = await requireApiAuth();
     const supabase = await createClient();
     const adminClient = createAdminClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const {
       triggerDays,
@@ -25,80 +20,87 @@ export async function POST(request: Request) {
       custom_body,
       target_segment = "all",
       include_cancelled = false,
+      member_ids: requestedMemberIds,
     } = await request.json();
-
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
-    }
 
     // Get gym info with branding and sender identity
     const { data: gym } = await supabase
       .from("gyms")
-      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email, sms_from_number")
-      .eq("id", userProfile.gym_id)
+      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email, sms_from_number, resend_api_key, twilio_account_sid, twilio_auth_token")
+      .eq("id", gymId)
       .single();
 
     if (!gym) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
+      return errorResponse("Gym not found", 404);
     }
 
-    // Get at-risk members for this threshold
-    const thresholdDate = new Date();
-    thresholdDate.setDate(thresholdDate.getDate() - (triggerDays || 14));
+    let atRiskMembers: Array<{ id: string; first_name: string; last_name: string; email: string | null; phone: string | null; last_visit_date: string | null; [key: string]: unknown }>;
+    let segment = "all";
+    let includeCancelled = false;
 
-    const segment = ["low", "medium", "high", "all"].includes(target_segment)
-      ? target_segment
-      : "all";
-    const includeCancelled = Boolean(include_cancelled);
-
-    // Build member query: status (active, or active + cancelled if include_cancelled)
-    let memberQuery = supabase
-      .from("members")
-      .select("*")
-      .eq("gym_id", userProfile.gym_id)
-      .lte("last_visit_date", thresholdDate.toISOString().split("T")[0]);
-
-    if (includeCancelled) {
-      memberQuery = memberQuery.or("status.eq.active,status.eq.cancelled");
+    if (Array.isArray(requestedMemberIds) && requestedMemberIds.length > 0) {
+      // Single or specific members (e.g. from member profile "Run campaign")
+      const { data: membersById } = await supabase
+        .from("members")
+        .select("*")
+        .eq("gym_id", gymId)
+        .in("id", requestedMemberIds);
+      atRiskMembers = membersById ?? [];
+      if (atRiskMembers.length === 0) {
+        return errorResponse("No valid members found", 400);
+      }
+      if (channel === "email") {
+        atRiskMembers = atRiskMembers.filter((m) => m.email);
+      } else if (channel === "sms") {
+        atRiskMembers = atRiskMembers.filter((m) => m.phone);
+      }
+      if (atRiskMembers.length === 0) {
+        return errorResponse(
+          `Selected member(s) have no ${channel === "email" ? "email" : "phone"} for this channel`,
+          400
+        );
+      }
     } else {
-      memberQuery = memberQuery.eq("status", "active");
-    }
+      // At-risk members by threshold (campaigns page)
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - (triggerDays || 14));
+      segment = ["low", "medium", "high", "all"].includes(target_segment)
+        ? target_segment
+        : "all";
+      includeCancelled = Boolean(include_cancelled);
 
-    if (segment !== "all") {
-      memberQuery = memberQuery.eq("churn_risk_level", segment);
-    } else {
-      memberQuery = memberQuery.or(
-        "churn_risk_level.eq.low,churn_risk_level.eq.medium,churn_risk_level.eq.high"
-      );
-    }
+      let memberQuery = supabase
+        .from("members")
+        .select("*")
+        .eq("gym_id", gymId)
+        .lte("last_visit_date", thresholdDate.toISOString().split("T")[0]);
 
-    if (channel === "email") {
-      memberQuery = memberQuery.not("email", "is", null);
-    } else if (channel === "sms") {
-      memberQuery = memberQuery.not("phone", "is", null);
-    }
+      if (includeCancelled) {
+        memberQuery = memberQuery.or("status.eq.active,status.eq.cancelled");
+      } else {
+        memberQuery = memberQuery.eq("status", "active");
+      }
+      if (segment !== "all") {
+        memberQuery = memberQuery.eq("churn_risk_level", segment);
+      } else {
+        memberQuery = memberQuery.or(
+          "churn_risk_level.eq.low,churn_risk_level.eq.medium,churn_risk_level.eq.high"
+        );
+      }
+      if (channel === "email") {
+        memberQuery = memberQuery.not("email", "is", null);
+      } else if (channel === "sms") {
+        memberQuery = memberQuery.not("phone", "is", null);
+      }
 
-    const { data: atRiskMembers } = await memberQuery.limit(100);
-
-    if (!atRiskMembers || atRiskMembers.length === 0) {
-      return NextResponse.json({
-        success: true,
-        sent: 0,
-        message: `No members at risk for this threshold with ${channel === "email" ? "email" : "phone"} contact`,
-      });
+      const { data: queried } = await memberQuery.limit(100);
+      atRiskMembers = queried ?? [];
+      if (atRiskMembers.length === 0) {
+        return successResponse({
+          sent: 0,
+          message: `No members at risk for this threshold with ${channel === "email" ? "email" : "phone"} contact`,
+        });
+      }
     }
 
     // Get template or create one from custom message
@@ -107,17 +109,14 @@ export async function POST(request: Request) {
 
     if (message_type === "custom") {
       if (!custom_subject || !custom_body) {
-        return NextResponse.json(
-          { error: "Custom subject and body are required for custom messages" },
-          { status: 400 }
-        );
+        return errorResponse("Custom subject and body are required for custom messages", 400);
       }
 
       // Create a temporary template for this custom message
       const { data: newTemplate, error: templateError } = await adminClient
         .from("campaign_templates")
         .insert({
-          gym_id: userProfile.gym_id,
+          gym_id: gymId,
           name: `${triggerDays} Days Inactive - Custom`,
           subject: custom_subject,
           body: custom_body,
@@ -127,10 +126,7 @@ export async function POST(request: Request) {
         .single();
 
       if (templateError || !newTemplate) {
-        return NextResponse.json(
-          { error: `Failed to create template: ${templateError?.message}` },
-          { status: 500 }
-        );
+        return errorResponse(`Failed to create template: ${templateError?.message}`, 500);
       }
 
       campaignTemplate = newTemplate;
@@ -138,10 +134,7 @@ export async function POST(request: Request) {
     } else {
       // Use provided template
       if (!template_id) {
-        return NextResponse.json(
-          { error: "Template ID is required when using template message type" },
-          { status: 400 }
-        );
+        return errorResponse("Template ID is required when using template message type", 400);
       }
 
       const { data: template } = await adminClient
@@ -150,11 +143,8 @@ export async function POST(request: Request) {
         .eq("id", template_id)
         .single();
 
-      if (!template || (template.gym_id !== null && template.gym_id !== userProfile.gym_id)) {
-        return NextResponse.json(
-          { error: "Template not found or not accessible" },
-          { status: 404 }
-        );
+      if (!template || (template.gym_id !== null && template.gym_id !== gymId)) {
+        return errorResponse("Template not found or not accessible", 404);
       }
 
       campaignTemplate = template;
@@ -165,7 +155,7 @@ export async function POST(request: Request) {
     let { data: campaign } = await supabase
       .from("campaigns")
       .select("*")
-      .eq("gym_id", userProfile.gym_id)
+        .eq("gym_id", gymId)
       .eq("trigger_days", triggerDays)
       .eq("channel", channel)
       .eq("status", "active")
@@ -175,7 +165,7 @@ export async function POST(request: Request) {
       const { data: newCampaign, error: campaignError } = await supabase
         .from("campaigns")
         .insert({
-          gym_id: userProfile.gym_id,
+          gym_id: gymId,
           name: `${triggerDays} Days Inactive - ${channel === "email" ? "Email" : "SMS"}`,
           trigger_type: "inactivity_threshold",
           trigger_days: triggerDays,
@@ -189,10 +179,7 @@ export async function POST(request: Request) {
         .single();
 
       if (campaignError || !newCampaign) {
-        return NextResponse.json(
-          { error: `Failed to create campaign: ${campaignError?.message}` },
-          { status: 500 }
-        );
+        return errorResponse(`Failed to create campaign: ${campaignError?.message}`, 500);
       }
 
       campaign = newCampaign;
@@ -273,6 +260,8 @@ export async function POST(request: Request) {
           to: member.phone!,
           body: messageBodyPlain,
           from: gym?.sms_from_number?.trim() || undefined,
+          accountSid: gym?.twilio_account_sid ?? undefined,
+          authToken: gym?.twilio_auth_token ?? undefined,
         });
         externalId = smsId;
         sendError = smsErr ?? null;
@@ -296,16 +285,11 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       sent: sentCount,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    console.error("Campaign run error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Campaign run error");
   }
 }

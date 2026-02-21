@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getGymContext } from "@/lib/supabase/get-gym-context";
 import { createClient } from "@/lib/supabase/server";
 import DashboardContent from "@/components/dashboard/DashboardContent";
+import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import ProductTourWrapper from "@/components/onboarding/ProductTourWrapper";
 
 /**
@@ -35,35 +36,36 @@ export default async function DashboardPage({
     .eq("id", gymId)
     .single();
 
-  const primaryColor = gym?.brand_primary_color || "#2563EB";
-  const secondaryColor = gym?.brand_secondary_color || "#1E40AF";
+  const primaryColor = gym?.brand_primary_color || "#84cc16";
+  const secondaryColor = gym?.brand_secondary_color || "#65a30d";
 
-  // Check if user has completed the tour
+  // Check user and profile
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  
-  let showTour = false;
-  if (user) {
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("has_completed_tour")
-      .eq("id", user.id)
-      .maybeSingle();
 
-    if (userProfile) {
-      showTour = userProfile.has_completed_tour === false || userProfile.has_completed_tour === null;
-    } else {
-      showTour = true;
-    }
-  }
+  const { data: userProfile } = user
+    ? await supabase
+        .from("users")
+        .select("full_name, has_completed_tour, role")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+
+  const showTour =
+    user && userProfile
+      ? userProfile.has_completed_tour === false || userProfile.has_completed_tour === null
+      : !!user;
 
   return (
     <>
       {showTour && user && <ProductTourWrapper userId={user.id} />}
       <div>
-        {/* Header */}
+        {/* Header with greeting */}
         <div className="mb-8">
+          <DashboardGreeting
+            userName={userProfile?.full_name ?? user?.email?.split("@")[0] ?? null}
+          />
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           {gym?.name && (
             <p className="mt-1 text-sm text-gray-600">{gym.name}</p>
@@ -88,7 +90,7 @@ export default async function DashboardPage({
         )}
 
         {/* Metrics, chart, and attention list — single fetch, shared data */}
-        <DashboardContent />
+        <DashboardContent userRole={(userProfile as { role?: "owner" | "admin" | "coach" } | null)?.role ?? null} />
       </div>
     </>
   );

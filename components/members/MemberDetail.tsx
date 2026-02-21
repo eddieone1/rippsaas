@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { formatMembershipStatus, getMembershipStatusBadgeColor } from "@/lib/membership-status";
 import { differenceInDays, parseISO } from "date-fns";
 import MemberActions from "./MemberActions";
 import MembershipTypeSelector from "./MembershipTypeSelector";
@@ -133,10 +134,10 @@ export default async function MemberDetail({
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Status</dt>
+                <dt className="text-sm font-medium text-gray-500">Membership Status</dt>
                 <dd className="mt-1">
-                  <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
-                    {member.status}
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getMembershipStatusBadgeColor(member.status)}`}>
+                    {formatMembershipStatus(member.status)}
                   </span>
                 </dd>
               </div>
@@ -150,7 +151,7 @@ export default async function MemberDetail({
                         : member.churn_risk_level === "medium"
                         ? "bg-yellow-100 text-yellow-800"
                         : member.churn_risk_level === "low"
-                        ? "bg-blue-100 text-blue-800"
+                        ? "bg-lime-100 text-lime-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
@@ -171,9 +172,9 @@ export default async function MemberDetail({
             </dl>
           </div>
 
-          {/* Campaign History */}
+          {/* Outreach History */}
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Campaign History</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Outreach History</h2>
             {campaignSends && campaignSends.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -189,7 +190,7 @@ export default async function MemberDetail({
                         Status
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">
-                        Re-engaged
+                        Visited again
                       </th>
                     </tr>
                   </thead>
@@ -220,14 +221,14 @@ export default async function MemberDetail({
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-gray-600">No campaigns sent to this member yet.</p>
+              <p className="text-sm text-gray-600">No outreach sent to this member yet.</p>
             )}
           </div>
         </div>
 
         {/* Actions Sidebar */}
         <div>
-          <MemberActions member={member} />
+          <MemberActions member={{ id: member.id, firstName: member.first_name, lastName: member.last_name, email: member.email }} />
         </div>
       </div>
     </div>

@@ -26,8 +26,9 @@ export default function PaymentForm() {
       }
 
       // Trial is automatically started (no Stripe Checkout in MVP)
-      // For MVP, we'll skip actual payment and just mark trial as started
-      router.push("/onboarding/welcome");
+      // Redirect directly to dashboard after onboarding completion
+      // Use window.location for a hard redirect to ensure fresh server-side data
+      window.location.href = "/dashboard";
     } catch (err) {
       setError("An unexpected error occurred");
       setLoading(false);
@@ -35,65 +36,42 @@ export default function PaymentForm() {
   };
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="mt-6 space-y-6">
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-md bg-red-500/20 border border-red-500/30 p-4">
+          <p className="text-sm text-red-200">{error}</p>
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 p-6">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-6">
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-gray-900">Free Trial</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            14 days free, then £29/month
+          <h3 className="text-xl font-bold text-white">Free Trial</h3>
+          <p className="mt-2 text-sm text-white/80">
+            14 days free, then £99/month (Starter plan)
           </p>
-          <ul className="mt-4 space-y-2 text-left text-sm text-gray-600">
+          <p className="mt-1 text-xs text-white/50">Pays for itself by saving 2–3 members per month</p>
+          <ul className="mt-4 space-y-2 text-left text-sm text-white/80">
             <li className="flex items-center">
-              <svg
-                className="mr-2 h-5 w-5 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Member retention dashboard
             </li>
             <li className="flex items-center">
-              <svg
-                className="mr-2 h-5 w-5 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Automated email campaigns
+              Automated email &amp; SMS plays
             </li>
             <li className="flex items-center">
-              <svg
-                className="mr-2 h-5 w-5 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Prove which interventions work
+            </li>
+            <li className="flex items-center">
+              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Unlimited member imports
             </li>
@@ -105,7 +83,7 @@ export default function PaymentForm() {
         <button
           onClick={handleStartTrial}
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-[#9EFF00] px-4 py-3 text-sm font-semibold text-black hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#9EFF00] disabled:opacity-50"
         >
           {loading ? "Starting trial..." : "Start 14-day trial"}
         </button>

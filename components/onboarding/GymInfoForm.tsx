@@ -137,17 +137,21 @@ export default function GymInfoForm() {
     }
   };
 
+  const inputClass =
+    "mt-1 block w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white placeholder:text-white/40 focus:border-[#9EFF00] focus:outline-none focus:ring-1 focus:ring-[#9EFF00]";
+  const labelClass = "block text-sm font-medium text-white/90";
+
   return (
-    <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+    <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-md bg-red-500/20 border border-red-500/30 p-4">
+          <p className="text-sm text-red-200">{error}</p>
         </div>
       )}
       <div className="space-y-4">
         <div>
-          <label htmlFor="gymName" className="block text-sm font-medium text-gray-700">
-            Gym Name <span className="text-red-500">*</span>
+          <label htmlFor="gymName" className={labelClass}>
+            Gym Name <span className="text-red-400">*</span>
           </label>
           <input
             id="gymName"
@@ -156,13 +160,13 @@ export default function GymInfoForm() {
             required
             value={gymName}
             onChange={(e) => setGymName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className={inputClass}
             placeholder="My Gym"
           />
         </div>
         <div>
-          <label htmlFor="ownerName" className="block text-sm font-medium text-gray-700">
-            Your Full Name <span className="text-red-500">*</span>
+          <label htmlFor="ownerName" className={labelClass}>
+            Your Full Name <span className="text-red-400">*</span>
           </label>
           <input
             id="ownerName"
@@ -171,12 +175,12 @@ export default function GymInfoForm() {
             required
             value={ownerName}
             onChange={(e) => setOwnerName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className={inputClass}
             placeholder="John Doe"
           />
         </div>
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="phone" className={labelClass}>
             Phone Number (Optional)
           </label>
           <input
@@ -185,38 +189,37 @@ export default function GymInfoForm() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className={inputClass}
             placeholder="+44 7700 900123"
           />
         </div>
 
         {/* Address Section */}
-        <div className="border-t border-gray-200 pt-4 mt-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">Gym Address</h3>
+        <div className="border-t border-white/10 pt-4 mt-4">
+          <h3 className="text-sm font-medium text-white mb-3">Gym Address</h3>
           <div className="flex gap-2 mb-4">
             <input
               type="text"
               placeholder="Enter postcode or address"
               value={addressSearch}
               onChange={(e) => setAddressSearch(e.target.value)}
-              className="flex-grow rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className={`flex-grow text-sm ${inputClass}`}
               disabled={searchingAddress}
             />
             <button
               type="button"
               onClick={handleFindAddress}
               disabled={searchingAddress}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="rounded-md bg-[#9EFF00] px-4 py-2 text-sm font-medium text-black hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#9EFF00] disabled:opacity-50"
             >
-              {searchingAddress ? "Searching..." : "Find Address"}
+              {searchingAddress ? "Searching..." : "Find"}
             </button>
           </div>
 
-          {/* Address Fields */}
           <div className="space-y-3">
             <div>
-              <label htmlFor="address_line1" className="block text-sm font-medium text-gray-700">
-                Address Line 1 <span className="text-red-500">*</span>
+              <label htmlFor="address_line1" className={labelClass}>
+                Address Line 1 <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -224,12 +227,12 @@ export default function GymInfoForm() {
                 name="address_line1"
                 value={addressFields.address_line1}
                 onChange={(e) => setAddressFields({ ...addressFields, address_line1: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className={inputClass}
                 required
               />
             </div>
             <div>
-              <label htmlFor="address_line2" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="address_line2" className={labelClass}>
                 Address Line 2 (Optional)
               </label>
               <input
@@ -238,13 +241,13 @@ export default function GymInfoForm() {
                 name="address_line2"
                 value={addressFields.address_line2}
                 onChange={(e) => setAddressFields({ ...addressFields, address_line2: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className={inputClass}
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                  City <span className="text-red-500">*</span>
+                <label htmlFor="city" className={labelClass}>
+                  City <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -252,13 +255,13 @@ export default function GymInfoForm() {
                   name="city"
                   value={addressFields.city}
                   onChange={(e) => setAddressFields({ ...addressFields, city: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className={inputClass}
                   required
                 />
               </div>
               <div>
-                <label htmlFor="postcode" className="block text-sm font-medium text-gray-700">
-                  Postcode <span className="text-red-500">*</span>
+                <label htmlFor="postcode" className={labelClass}>
+                  Postcode <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -266,13 +269,13 @@ export default function GymInfoForm() {
                   name="postcode"
                   value={addressFields.postcode}
                   onChange={(e) => setAddressFields({ ...addressFields, postcode: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className={inputClass}
                   required
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="country" className={labelClass}>
                 Country
               </label>
               <input
@@ -281,7 +284,7 @@ export default function GymInfoForm() {
                 name="country"
                 value={addressFields.country}
                 onChange={(e) => setAddressFields({ ...addressFields, country: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className={inputClass}
               />
             </div>
           </div>
@@ -292,7 +295,7 @@ export default function GymInfoForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-[#9EFF00] px-4 py-3 text-sm font-semibold text-black hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#9EFF00] disabled:opacity-50"
         >
           {loading ? "Saving..." : "Continue"}
         </button>

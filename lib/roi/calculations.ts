@@ -28,7 +28,7 @@ export interface MembershipTypeRow {
 }
 
 /**
- * Count members considered "saved" (re-engaged) from campaign sends.
+ * Count members considered "saved" (re-engaged = made another visit) from campaign sends.
  */
 export function calculateMembersSaved(campaignSends: CampaignSendRow[]): number {
   return campaignSends.filter((s) => s.outcome === "re_engaged").length;
@@ -130,7 +130,7 @@ export function calculateMonthlyTrend(
   return sortedMonths.map((month) => {
     const entry = byMonth.get(month)!;
     let revenue = 0;
-    for (const id of entry.memberIds) {
+    for (const id of Array.from(entry.memberIds)) {
       const member = memberById.get(id);
       if (member) revenue += monthlyValue(member, membershipTypeMap) * 3;
     }

@@ -100,7 +100,7 @@ export default async function RetentionTimeline({
       title: send.campaigns?.trigger_days
         ? `Automation triggered: ${campaign?.name || "Campaign"}`
         : `Message sent: ${campaign?.name || "Campaign"}`,
-      description: `${campaign?.channel?.toUpperCase() || "Email"} sent${send.member_re_engaged ? " - Member reengaged" : ""}`,
+      description: `${campaign?.channel?.toUpperCase() || "Email"} sent${send.member_re_engaged ? " - Member visited again" : ""}`,
       metadata: {
         channel: send.channel,
         outcome: send.outcome,
@@ -131,7 +131,7 @@ export default async function RetentionTimeline({
       case "medium":
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "low":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-lime-100 text-lime-800 border-lime-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
@@ -170,7 +170,7 @@ export default async function RetentionTimeline({
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-sm font-bold ${getStatusBadgeColor(member.status)}`}
             >
-              {member.status.toUpperCase()}
+              {member.status ? member.status.charAt(0).toUpperCase() + member.status.slice(1).toLowerCase() : "—"}
             </span>
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-sm font-bold ${getRiskBadgeColor(member.churn_risk_level)}`}
@@ -200,7 +200,7 @@ export default async function RetentionTimeline({
                   <span
                     className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getStatusBadgeColor(member.status)}`}
                   >
-                    {member.status}
+                    {member.status ? member.status.charAt(0).toUpperCase() + member.status.slice(1).toLowerCase() : "—"}
                   </span>
                 </dd>
               </div>
@@ -279,9 +279,9 @@ export default async function RetentionTimeline({
           </div>
 
           {/* Suggested Actions Panel */}
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-blue-900 mb-3">Suggested Actions</h3>
-            <MemberActions member={member} />
+          <div className="rounded-lg border border-lime-200 bg-lime-50 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-lime-900 mb-3">Suggested Actions</h3>
+            <MemberActions member={{ id: member.id, firstName: member.first_name, lastName: member.last_name, email: member.email }} />
           </div>
         </div>
 
@@ -308,7 +308,7 @@ export default async function RetentionTimeline({
                         </div>
                       )}
                       {event.type === "message" && (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-800">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-100 text-lime-800">
                           <span className="text-xs">✉</span>
                         </div>
                       )}
@@ -330,7 +330,7 @@ export default async function RetentionTimeline({
                           <p className="mt-1 text-xs text-gray-600">{event.description}</p>
                           {event.metadata?.member_re_engaged && (
                             <span className="mt-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
-                              Reengaged
+                              Visited again
                             </span>
                           )}
                         </div>

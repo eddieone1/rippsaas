@@ -20,32 +20,31 @@ interface TrendDataPoint {
   memberCount: number;
 }
 
+type ChartRange = "1M" | "3M" | "6M" | "1Y";
+
 /**
  * Habit Decay Trend Chart
  *
- * Shows average commitment score trend over last 30 days.
- * When initialData is provided (e.g. from DashboardContent), no fetch is made.
+ * Real-time annotation of commitment score movement. Visible range: monthly (start to end of month).
+ * Range options: 1M, 3M, 6M, 1Y. Data is daily recalculated from visits and commitment factors.
  */
 export default function HabitDecayChart({
   initialData,
 }: {
   initialData?: DashboardMetricsData | null;
 }) {
+  const [range, setRange] = useState<ChartRange>("1M");
   const [data, setData] = useState<TrendDataPoint[]>(initialData?.habitDecayTrend ?? []);
-  const [loading, setLoading] = useState(!initialData);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (initialData?.habitDecayTrend) {
-      setData(initialData.habitDecayTrend);
-      setLoading(false);
-      return;
-    }
     fetchTrendData();
-  }, [initialData]);
+  }, [range]);
 
   const fetchTrendData = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/dashboard/metrics");
+      const response = await fetch(`/api/dashboard/metrics?range=${range}`);
       if (!response.ok) return;
       const metrics = await response.json();
       setData(metrics.habitDecayTrend || []);
@@ -70,12 +69,8 @@ export default function HabitDecayChart({
     );
   }
 
-  // Format data for chart (show last 14 days for clarity)
-  const chartData = data.slice(-14).map((point) => ({
-    date: new Date(point.date).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    }),
+  const chartData = data.map((point) => ({
+    date: point.dateLabel,
     score: point.avgCommitmentScore,
   }));
 
@@ -83,15 +78,36 @@ export default function HabitDecayChart({
   const avgScore =
     chartData.reduce((sum, d) => sum + d.score, 0) / chartData.length;
 
+  // One-line summary
+  const summary =
+    avgScore >= 70
+      ? "Commitment trend is healthy."
+      : avgScore >= 50
+        ? "Some members need attention."
+        : "Low commitment – prioritise outreach.";
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Habit Decay Trend
-        </h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Average commitment score over last 14 days
-        </p>
+      <p className="mb-3 text-sm text-gray-600">{summary}</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Habit Decay Trend
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Commitment score by month – recency, consistency, tenure
+          </p>
+        </div>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value as ChartRange)}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700"
+        >
+          <option value="1M">1 Month</option>
+          <option value="3M">3 Months</option>
+          <option value="6M">6 Months</option>
+          <option value="1Y">1 Year</option>
+        </select>
       </div>
 
       <ResponsiveContainer width="100%" height={250}>
@@ -133,9 +149,9 @@ export default function HabitDecayChart({
           <Line
             type="monotone"
             dataKey="score"
-            stroke="#2563eb"
+            stroke="#84cc16"
             strokeWidth={2}
-            dot={{ fill: "#2563eb", r: 4 }}
+            dot={{ fill: "#84cc16", r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>

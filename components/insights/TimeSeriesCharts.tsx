@@ -6,12 +6,16 @@ import {
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 
 interface TimeSeriesData {
@@ -52,7 +56,7 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
       }
       params.append("group_by", groupBy);
 
-      const response = await fetch(`/api/interventions/time series?${params.toString()}`);
+      const response = await fetch(`/api/interventions/time-series?${params.toString()}`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -64,9 +68,6 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
       setData(result);
       setLoading(false);
       
-      // Debug logging
-      console.log("Time series data:", result);
-      console.log("Monthly churn rate:", result.monthlyChurnRate);
     } catch (err) {
       console.error("Error fetching time series data:", err);
       setError("An unexpected error occurred");
@@ -106,6 +107,15 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
     return null;
   }
 
+  const chartCardClass = "rounded-xl border border-gray-200 bg-white p-6 shadow-md shadow-gray-200/50 hover:shadow-lg transition-shadow";
+  const tooltipClass = {
+    backgroundColor: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+    padding: "10px 14px",
+  };
+
   return (
     <div className="space-y-6">
       {/* Group By Selector */}
@@ -114,7 +124,7 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
         <select
           value={groupBy}
           onChange={(e) => setGroupBy(e.target.value as "day" | "week" | "month")}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-500/20"
         >
           <option value="day">Day</option>
           <option value="week">Week</option>
@@ -124,32 +134,26 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Campaigns Sent Over Time */}
+        {/* Outreach Sent Over Time */}
         {data.campaignsOverTime.length > 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">
-              Campaigns Sent Over Time
+          <div className={chartCardClass}>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">
+              Outreach Sent Over Time
             </h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.campaignsOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
+            <p className="text-xs text-gray-500 mb-4">Campaigns sent per period</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.campaignsOverTime} margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="barLimeGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a3e635" />
+                    <stop offset="100%" stopColor="#84cc16" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} angle={-45} textAnchor="end" height={60} />
                 <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Bar dataKey="sent" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={tooltipClass} cursor={{ fill: "rgba(132, 204, 22, 0.08)" }} />
+                <Bar dataKey="sent" fill="url(#barLimeGrad)" radius={[6, 6, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -157,149 +161,129 @@ export default function TimeSeriesCharts({ timeRange }: TimeSeriesChartsProps) {
 
         {/* Success Rate Over Time */}
         {data.successRateOverTime.length > 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">
+          <div className={chartCardClass}>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">
               Success Rate Over Time
             </h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.successRateOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis
-                  stroke="#6b7280"
-                  fontSize={12}
-                  label={{ value: "Success Rate (%)", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                  }}
-                  formatter={(value: number | undefined) => [`${value ?? 0}%`, "Success Rate"]}
-                />
-                <Line
+            <p className="text-xs text-gray-500 mb-4">% of members who visited again after outreach</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={data.successRateOverTime} margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="successAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} angle={-45} textAnchor="end" height={60} />
+                <YAxis stroke="#6b7280" fontSize={12} label={{ value: "Success Rate (%)", angle: -90, position: "insideLeft", style: { fontSize: 11 } }} />
+                <Tooltip contentStyle={tooltipClass} formatter={(v: number | undefined) => [`${v ?? 0}%`, "Success Rate"]} />
+                <Area
                   type="monotone"
                   dataKey="successRate"
                   stroke="#10b981"
-                  strokeWidth={2}
-                  dot={{ fill: "#10b981", r: 4 }}
-                  activeDot={{ r: 6 }}
+                  strokeWidth={2.5}
+                  fill="url(#successAreaGrad)"
+                  dot={{ fill: "#10b981", stroke: "#fff", strokeWidth: 2, r: 5 }}
+                  activeDot={{ r: 7, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         )}
 
         {/* Reengagement Over Time */}
         {data.reengagementOverTime.length > 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">
-              Members Reengaged Over Time
+          <div className={chartCardClass}>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">
+              Members Who Visited Again Over Time
             </h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.reengagementOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
+            <p className="text-xs text-gray-500 mb-4">Re-engaged members per period</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.reengagementOverTime} margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="barEmeraldGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#10b981" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} angle={-45} textAnchor="end" height={60} />
                 <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Bar dataKey="reEngaged" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={tooltipClass} cursor={{ fill: "rgba(16, 185, 129, 0.08)" }} />
+                <Bar dataKey="reEngaged" fill="url(#barEmeraldGrad)" radius={[6, 6, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* Monthly Churn Rate - Always show if there are members */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">
+        {/* Monthly Churn Rate - Above/below market visual */}
+        <div className={chartCardClass}>
+          <h3 className="text-base font-semibold text-gray-900 mb-1">
             Monthly Churn Rate
           </h3>
+          <p className="text-xs text-gray-500 mb-4">Your churn vs UK fitness benchmark (5%). Lower is better.</p>
           {churnRateWithMarket.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={churnRateWithMarket}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="date"
-                    stroke="#6b7280"
-                    fontSize={12}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis
-                    stroke="#6b7280"
-                    fontSize={12}
-                    label={{ value: "Churn Rate (%)", angle: -90, position: "insideLeft" }}
-                  />
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={churnRateWithMarket} margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
+                  <defs>
+                    <linearGradient id="churnAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <ReferenceArea y1={5} y2={10} fill="#fef2f2" fillOpacity={0.5} strokeOpacity={0} />
+                  <ReferenceArea y1={0} y2={5} fill="#f0fdf4" fillOpacity={0.4} strokeOpacity={0} />
+                  <ReferenceLine y={5} stroke="#9ca3af" strokeDasharray="5 5" strokeWidth={1.5} />
+                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} angle={-45} textAnchor="end" height={60} />
+                  <YAxis stroke="#6b7280" fontSize={12} domain={[0, "auto"]} label={{ value: "Churn %", angle: -90, position: "insideLeft", style: { fontSize: 11 } }} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "6px",
-                    }}
-                    formatter={(value: number | undefined, name: string | undefined) => {
-                      const v = value ?? 0;
-                      const n = name ?? "";
-                      if (n === "churnRate") {
-                        return [`${v}%`, "Your Churn Rate"];
-                      }
-                      if (n === "marketAverage") {
-                        return [`${v}%`, "Market Average"];
-                      }
-                      return [v, n];
+                    contentStyle={tooltipClass}
+                    formatter={(v: number | undefined, n?: string) => {
+                      const val = v ?? 0;
+                      const name = String(n ?? "");
+                      if (name === "churnRate") return [`${val}%`, "Your Churn"];
+                      if (name === "marketAverage") return [`${val}%`, "Market Avg"];
+                      return [val, n];
                     }}
                   />
                   <Legend />
+                  <Area type="monotone" dataKey="churnRate" stroke="none" fill="url(#churnAreaGrad)" />
                   <Line
                     type="monotone"
                     dataKey="churnRate"
                     stroke="#ef4444"
-                    strokeWidth={2}
-                    name="Your Churn Rate"
-                    dot={{ fill: "#ef4444", r: 4 }}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={2.5}
+                    name="Your Churn"
+                    dot={{ fill: "#ef4444", stroke: "#fff", strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="marketAverage"
-                    stroke="#9ca3af"
+                    stroke="#6b7280"
                     strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="Market Average (5%)"
-                    dot={{ fill: "#9ca3af", r: 4 }}
+                    strokeDasharray="6 4"
+                    name="Market (5%)"
+                    dot={false}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
               <p className="mt-2 text-xs text-gray-500 text-center">
-                Market average based on UK fitness industry benchmark (5% monthly churn)
+                Green = below market. Red zone = above market. Target: 3–5%.
               </p>
             </>
           ) : (
-            <div className="flex items-center justify-center h-[250px]">
-              <p className="text-sm text-gray-500">
-                No churn data available yet. Churn rate will appear once you have members and cancellation data.
+            <div className="flex flex-col items-center justify-center h-[250px] gap-3">
+              <div className="text-4xl opacity-40">📊</div>
+              <p className="text-sm text-gray-500 text-center max-w-xs">
+                No churn data yet. Send outreach and track visits to see your retention trends.
               </p>
+              <a href="/plays" className="text-sm font-medium text-lime-600 hover:text-lime-700">
+                Run a play →
+              </a>
             </div>
           )}
         </div>

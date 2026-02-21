@@ -160,8 +160,8 @@ export default function InterventionPerformance({
             Once you start messaging at-risk members, you'll see which interventions are most effective at getting people back through the door.
           </p>
           <Link
-            href="/campaigns"
-            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            href="/plays"
+            className="inline-flex items-center rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
           >
             Send your first message
           </Link>
@@ -178,18 +178,24 @@ export default function InterventionPerformance({
         </div>
       )}
 
-      {/* Top-Level Summary */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-        <h2 className="text-lg font-semibold text-blue-900 mb-2">
-          What's working right now
-        </h2>
-        <p className="text-sm text-blue-800 mb-2">
-          These insights are based on how members respond after receiving a message or offer.
-          If someone returns within 14 days, we count that as a successful reengagement.
-        </p>
-        <p className="text-xs text-blue-700">
-          Results are directional, not guaranteed — they help you make better decisions, faster.
-        </p>
+      {/* Featured What's Working block */}
+      <div className="rounded-xl border-2 border-lime-200 bg-gradient-to-br from-lime-50 to-emerald-50 p-6 shadow-md">
+        <div className="flex items-start gap-4">
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-lime-500/20 flex items-center justify-center text-2xl">
+            ✓
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-lime-900 mb-1">
+              What&apos;s working right now
+            </h2>
+            <p className="text-sm text-lime-800 mb-2">
+              These insights show which messages bring members back. We count a visit within 14 days after outreach as successful re-engagement — your proof of what works.
+            </p>
+            <p className="text-xs text-lime-700">
+              Directional, not guaranteed — for better decisions, faster.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Time Range Filters */}
@@ -199,7 +205,7 @@ export default function InterventionPerformance({
             onClick={() => handleTimeRangeChange("all")}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               timeRange === "all"
-                ? "bg-blue-600 text-white"
+                ? "bg-lime-500 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -209,7 +215,7 @@ export default function InterventionPerformance({
             onClick={() => handleTimeRangeChange("month")}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               timeRange === "month"
-                ? "bg-blue-600 text-white"
+                ? "bg-lime-500 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -219,7 +225,7 @@ export default function InterventionPerformance({
             onClick={() => handleTimeRangeChange("quarter")}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               timeRange === "quarter"
-                ? "bg-blue-600 text-white"
+                ? "bg-lime-500 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -229,7 +235,7 @@ export default function InterventionPerformance({
             onClick={() => handleTimeRangeChange("year")}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               timeRange === "year"
-                ? "bg-blue-600 text-white"
+                ? "bg-lime-500 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -248,40 +254,34 @@ export default function InterventionPerformance({
       {/* Time Series Charts */}
       <TimeSeriesCharts timeRange={timeRange} />
 
-      {/* Insight Callouts */}
+      {/* Insight Callouts - Rip's key differentiator */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {insights.highest_performing && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-6">
-            <h3 className="text-sm font-medium text-green-900 mb-1">
-              Best performer this period
-            </h3>
-            <p className="text-lg font-semibold text-green-900 mb-2">
-              "{insights.highest_performing.template_name}"
+          <div className="rounded-xl border border-green-200 bg-green-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Best performer</p>
+            <p className="text-lg font-bold text-green-900 mb-1">
+              &ldquo;{insights.highest_performing.template_name}&rdquo;
             </p>
             <p className="text-sm text-green-800">
-              Reengaged {insights.highest_performing.success_rate}% of members — your highest performing intervention.
+              {insights.highest_performing.success_rate}% made another visit — your highest performing intervention.
             </p>
           </div>
         )}
 
         {fastestChannel && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-            <h3 className="text-sm font-medium text-blue-900 mb-1">
-              Fastest return
-            </h3>
-            <p className="text-sm text-blue-800">
-              Members who received {fastestChannel.channel.toUpperCase()} returned in an average of {fastestChannel.avgDays} days — faster than {fastestChannel.channel === "email" ? "SMS" : "email"}.
+          <div className="rounded-xl border border-lime-200 bg-lime-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-xs font-semibold text-lime-700 uppercase tracking-wide mb-2">Fastest return</p>
+            <p className="text-sm text-lime-800">
+              {fastestChannel.channel.charAt(0).toUpperCase() + fastestChannel.channel.slice(1)} brought members back in an average of <strong>{fastestChannel.avgDays} days</strong> — faster than {fastestChannel.channel === "email" ? "SMS" : "email"}.
             </p>
           </div>
         )}
 
         {underperforming && (
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 sm:col-span-2">
-            <h3 className="text-sm font-medium text-yellow-900 mb-1">
-              Needs attention
-            </h3>
-            <p className="text-sm text-yellow-800">
-              "{underperforming.template_name}" has a {underperforming.success_rate}% response rate. Consider trying a more personal message or an offer.
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:col-span-2">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Needs attention</p>
+            <p className="text-sm text-amber-900">
+              &ldquo;{underperforming.template_name}&rdquo; has a {underperforming.success_rate}% response rate. Try a more personal message or an offer.
             </p>
           </div>
         )}
@@ -309,7 +309,7 @@ export default function InterventionPerformance({
                     Sent
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Reengaged
+                    Visited Again
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Success rate
@@ -367,7 +367,7 @@ export default function InterventionPerformance({
           <div className="mt-3 text-sm text-gray-600 space-y-2">
             <p>
               We track what happens after a message is sent.
-              If a member returns, books, or replies within 14 days, we count it as a successful reengagement.
+              If a member makes another visit within 14 days, we count it as a successful re-engagement.
             </p>
             <p>
               This helps spot patterns — not make guarantees.

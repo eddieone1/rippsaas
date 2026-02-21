@@ -22,11 +22,17 @@ export async function getGymContext(): Promise<{
   }
 
   // Get user profile with gym_id
-  const { data: userProfile } = await supabase
+  // Use maybeSingle() to handle cases where profile might not exist yet
+  const { data: userProfile, error } = await supabase
     .from("users")
     .select("*, gym_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+  
+  // Log error for debugging but don't throw - return null gymId instead
+  if (error && error.code !== "PGRST116") { // PGRST116 is "not found" which is fine
+    console.error("Error fetching user profile:", error);
+  }
 
   return {
     user: { id: user.id, email: user.email },

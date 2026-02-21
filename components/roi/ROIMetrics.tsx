@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Users, DollarSign } from "lucide-react";
+import { TrendingUp, Users } from "lucide-react";
+
+function DollarSignIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
 import BeforeAfterChart from "./BeforeAfterChart";
 import ROISummaryPanel from "./ROISummaryPanel";
 
@@ -96,7 +105,7 @@ export default function ROIMetrics() {
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-500/20"
         >
           <option value="30days">Last 30 days</option>
           <option value="90days">Last 90 days</option>
@@ -130,11 +139,11 @@ export default function ROIMetrics() {
                 £{data.revenueRetained.toLocaleString()}
               </p>
               <p className="mt-1 text-xs text-gray-600">
-                From members re-engaged after intervention
+                From members who made another visit after intervention
               </p>
             </div>
             <div className="rounded-full bg-emerald-100 p-3">
-              <DollarSign className="h-6 w-6 text-emerald-700" />
+              <DollarSignIcon className="h-6 w-6 text-emerald-700" />
             </div>
           </div>
         </div>
@@ -149,11 +158,11 @@ export default function ROIMetrics() {
                 {data.membersSaved}
               </p>
               <p className="mt-1 text-xs text-gray-600">
-                Reengaged after campaign or coach action
+                Visited again after campaign or coach action
               </p>
             </div>
-            <div className="rounded-full bg-blue-100 p-3">
-              <Users className="h-6 w-6 text-blue-700" />
+            <div className="rounded-full bg-lime-100 p-3">
+              <Users className="h-6 w-6 text-lime-700" />
             </div>
           </div>
         </div>

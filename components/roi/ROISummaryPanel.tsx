@@ -50,7 +50,7 @@ export default function ROISummaryPanel({
           <p className="text-sm font-medium text-gray-500">Members saved</p>
           <p className="mt-1 text-2xl font-bold text-gray-900">{membersSaved}</p>
           <p className="mt-0.5 text-xs text-gray-500">
-            Reengaged after intervention
+            Visited again after intervention
           </p>
         </div>
         <div className="flex items-start gap-2">

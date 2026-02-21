@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 
 interface EngagementEvent {
-  type: "visit" | "campaign";
+  type: "visit" | "campaign" | "coach_touch";
   date: string;
   title: string;
   description: string;
@@ -12,6 +12,7 @@ interface EngagementEvent {
     reEngaged?: boolean;
     outcome?: string;
     activityType?: string;
+    coachName?: string;
   };
 }
 
@@ -42,6 +43,8 @@ export default function EngagementHistory({ events }: EngagementHistoryProps) {
         return "🏋️";
       case "campaign":
         return "📧";
+      case "coach_touch":
+        return "👤";
       default:
         return "•";
     }
@@ -52,6 +55,8 @@ export default function EngagementHistory({ events }: EngagementHistoryProps) {
       case "visit":
         return "bg-green-100 text-green-800";
       case "campaign":
+        return "bg-lime-100 text-lime-800";
+      case "coach_touch":
         return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -91,7 +96,7 @@ export default function EngagementHistory({ events }: EngagementHistoryProps) {
                   <p className="text-xs text-gray-600">{event.description}</p>
                   {event.metadata?.reEngaged && (
                     <span className="mt-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
-                      Reengaged
+                      Visited again
                     </span>
                   )}
                 </div>

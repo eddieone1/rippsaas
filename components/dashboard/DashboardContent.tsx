@@ -4,12 +4,22 @@ import { useEffect, useState } from "react";
 import DashboardMetrics from "@/components/dashboard/DashboardMetrics";
 import HabitDecayChart from "@/components/dashboard/HabitDecayChart";
 import AttentionNeededList from "@/components/dashboard/AttentionNeededList";
+import DashboardInbox from "@/components/dashboard/DashboardInbox";
+import DashboardCommentary from "@/components/dashboard/DashboardCommentary";
+import GetStartedChecklist from "@/components/dashboard/GetStartedChecklist";
+import InterventionEffectivenessWidget from "@/components/dashboard/InterventionEffectivenessWidget";
 
 export interface DashboardMetricsData {
+  totalMemberCount?: number;
+  totalCampaignSends?: number;
+  campaignsSentThisMonth?: number;
   atRiskCount: number;
   avgCommitmentScore: number;
   revenueAtRisk: number;
   revenueSaved: number;
+  monthlyChurnPct?: number;
+  reengagementRate?: number;
+  membersNotContacted10Plus?: number;
   habitDecayTrend: Array<{
     date: string;
     dateLabel: string;
@@ -24,14 +34,26 @@ export interface DashboardMetricsData {
     daysSinceLastVisit: number | null;
     lastVisitDate: string | null;
     monthlyRevenue: number;
+    engagedToday?: boolean;
   }>;
+  lastSnapshot?: {
+    atRiskCount: number;
+    avgCommitmentScore: number;
+    revenueAtRisk: number;
+    revenueSaved: number;
+    snapshotAt: string;
+  } | null;
+}
+
+interface DashboardContentProps {
+  userRole?: "owner" | "admin" | "coach" | null;
 }
 
 /**
  * Fetches dashboard metrics once and passes the same data to all dashboard sections.
  * Avoids three separate API calls (DashboardMetrics, HabitDecayChart, AttentionNeededList).
  */
-export default function DashboardContent() {
+export default function DashboardContent({ userRole }: DashboardContentProps = {}) {
   const [data, setData] = useState<DashboardMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,17 +114,78 @@ export default function DashboardContent() {
     );
   }
 
+  const atRiskCount = data.atRiskCount;
+  const revenueAtRisk = data.revenueAtRisk;
+  const totalMembers = data.totalMemberCount ?? 0;
   return (
     <>
+      {/* Hero: X members need attention / £X at risk when atRiskCount > 0, else success */}
+      {atRiskCount > 0 ? (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50/50 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-lg font-medium text-gray-900">
+              <span className="font-semibold text-amber-700">{atRiskCount} members</span> need attention
+              {revenueAtRisk > 0 && (
+                <> · <span className="font-semibold text-amber-700">£{revenueAtRisk.toLocaleString()}</span> at risk this month</>
+              )}
+            </p>
+            <a
+              href="/plays"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-700"
+            >
+              Run a Play →
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50/50 p-5">
+          <p className="text-lg font-medium text-gray-900">
+            <span className="font-semibold text-green-700">All clear.</span> No members at risk right now.
+          </p>
+        </div>
+      )}
+
       <div className="mb-8">
         <DashboardMetrics initialData={data} />
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <HabitDecayChart initialData={data} />
+
+      {(totalMembers === 0 || (data.totalCampaignSends ?? 0) === 0) && (
+        <div className="mb-6">
+          <GetStartedChecklist
+            totalMemberCount={totalMembers}
+            totalCampaignSends={data.totalCampaignSends ?? 0}
+            campaignsSentThisMonth={data.campaignsSentThisMonth ?? 0}
+          />
         </div>
-        <div className="lg:col-span-1">
+      )}
+
+      <div className="mb-6">
+        <DashboardCommentary
+          atRiskCount={atRiskCount}
+          avgCommitmentScore={data.avgCommitmentScore}
+          revenueAtRisk={revenueAtRisk}
+          revenueSaved={data.revenueSaved}
+          lastSnapshot={data.lastSnapshot ?? null}
+        />
+      </div>
+
+      {/* Action-first: when at risk, Attention + CTA prominent; What's Working elevated in sidebar */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <HabitDecayChart initialData={data} />
+          <DashboardInbox membersNotContacted10Plus={data.membersNotContacted10Plus} />
+        </div>
+        <div className="space-y-6 lg:col-span-1">
+          <InterventionEffectivenessWidget />
           <AttentionNeededList initialData={data} />
+          {atRiskCount > 0 && (
+            <a
+              href="/plays"
+              className="block rounded-lg border-2 border-lime-500 bg-lime-50 p-4 text-center font-semibold text-lime-800 hover:bg-lime-100"
+            >
+              Run a Play →
+            </a>
+          )}
         </div>
       </div>
     </>

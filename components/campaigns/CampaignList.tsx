@@ -70,7 +70,8 @@ export default function CampaignList({
 
       setShowRunModal(null);
       router.refresh();
-      alert(`Campaign sent to ${data.sent} members!`);
+      const result = data.data ?? data;
+      alert(`Campaign sent to ${result.sent} members!`);
       setLoading(null);
     } catch (err) {
       setError("An unexpected error occurred");
@@ -111,7 +112,7 @@ export default function CampaignList({
                 key={days}
                 onClick={() => handleRunCampaign(days)}
                 disabled={loading !== null}
-                className="rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading === `${days}` 
                   ? "Sending..." 
@@ -194,6 +195,7 @@ export default function CampaignList({
       {/* Run Campaign Modal */}
       {showRunModal !== null && (
         <RunCampaignModal
+          gymId={gymId}
           triggerDays={showRunModal}
           templates={templates}
           onClose={() => setShowRunModal(null)}

@@ -10,8 +10,8 @@ interface ThemeVarsProps {
 export default function ThemeVars({ primary, secondary }: ThemeVarsProps) {
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--brand-primary", primary ?? "#2563EB");
-    root.style.setProperty("--brand-secondary", secondary ?? "#1E40AF");
+    root.style.setProperty("--brand-primary", primary ?? "#84cc16");
+    root.style.setProperty("--brand-secondary", secondary ?? "#65a30d");
     return () => {
       root.style.removeProperty("--brand-primary");
       root.style.removeProperty("--brand-secondary");

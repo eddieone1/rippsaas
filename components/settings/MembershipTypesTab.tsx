@@ -18,9 +18,10 @@ interface MembershipTypesTabProps {
   membershipTypes: MembershipType[];
   gymId?: string | null;
   onUpdate: () => void;
+  onSuccess?: (msg: string) => void;
 }
 
-export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }: MembershipTypesTabProps) {
+export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate, onSuccess }: MembershipTypesTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
       });
       setShowAddForm(false);
       setEditingId(null);
+      onSuccess?.(editingId ? "Membership type updated" : "Membership type created");
       onUpdate();
       setLoading(false);
     } catch (err) {
@@ -123,6 +125,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
         return;
       }
 
+      onSuccess?.("Membership type deleted");
       onUpdate();
       setLoading(false);
     } catch (err) {
@@ -144,6 +147,12 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
     setError(null);
   };
 
+  const formatPrice = (type: MembershipType) => {
+    if (type.price == null) return "Price on request";
+    const freq = type.billing_frequency === "monthly" ? "/mo" : type.billing_frequency === "yearly" ? "/yr" : "";
+    return `£${Number(type.price).toFixed(2)}${freq}`;
+  };
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
@@ -151,7 +160,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
         {!showAddForm && (
           <button
             onClick={() => setShowAddForm(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
           >
             + Add Membership Type
           </button>
@@ -181,7 +190,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 placeholder="e.g., Basic, Premium, Student"
               />
             </div>
@@ -194,7 +203,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                 rows={2}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 placeholder="Optional description"
               />
             </div>
@@ -210,7 +219,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                   min="0"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   placeholder="0.00"
                 />
               </div>
@@ -222,7 +231,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                   id="billing_frequency"
                   value={formData.billing_frequency}
                   onChange={(e) => setFormData({ ...formData, billing_frequency: e.target.value as any })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 >
                   <option value="monthly">Monthly</option>
                   <option value="quarterly">Quarterly</option>
@@ -238,7 +247,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                 id="is_active"
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 text-lime-600 focus:ring-lime-500"
               />
               <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
                 Active (available for new members)
@@ -248,7 +257,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
               >
                 {loading ? "Saving..." : editingId ? "Update" : "Create"}
               </button>
@@ -263,6 +272,27 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
             </div>
           </div>
         </form>
+      )}
+
+      {/* Preview: how members see these */}
+      {membershipTypes.length > 0 && (
+        <div className="mb-6 rounded-lg border border-lime-200 bg-lime-50/30 p-4">
+          <p className="text-sm font-medium text-gray-700 mb-2">Preview (as members see them)</p>
+          <div className="flex flex-wrap gap-2">
+            {membershipTypes.filter((t) => t.is_active).map((type) => (
+              <div
+                key={type.id}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
+              >
+                <span className="font-medium text-gray-900">{type.name}</span>
+                <span className="ml-2 text-sm text-gray-600">{formatPrice(type)}</span>
+              </div>
+            ))}
+            {membershipTypes.filter((t) => t.is_active).length === 0 && (
+              <p className="text-xs text-gray-500">No active types to preview</p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Membership Types List */}
@@ -302,7 +332,7 @@ export default function MembershipTypesTab({ membershipTypes, gymId, onUpdate }:
                 <button
                   onClick={() => handleEdit(type)}
                   disabled={loading}
-                  className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="rounded-md bg-lime-50 px-3 py-1.5 text-sm font-medium text-lime-700 hover:bg-lime-100 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
                 >
                   Edit
                 </button>

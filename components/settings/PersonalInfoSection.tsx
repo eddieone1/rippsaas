@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { validatePassword, PASSWORD_RULES_TEXT } from "@/lib/password-rules";
 
-export default function PersonalInfoSection() {
+export default function PersonalInfoSection({ onSuccess }: { onSuccess?: (msg: string) => void } = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,6 +48,7 @@ export default function PersonalInfoSection() {
         return;
       }
       setSuccess("Profile updated");
+      onSuccess?.("Profile updated");
       router.refresh();
     } catch {
       setError("An unexpected error occurred");
@@ -82,6 +83,7 @@ export default function PersonalInfoSection() {
         return;
       }
       setPasswordSuccess("Password updated");
+      onSuccess?.("Password updated");
       setPasswordForm({ new_password: "", confirm: "" });
     } catch {
       setPasswordError("An unexpected error occurred");
@@ -120,7 +122,7 @@ export default function PersonalInfoSection() {
             type="email"
             value={profile.email}
             onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             required
           />
         </div>
@@ -130,7 +132,7 @@ export default function PersonalInfoSection() {
             type="tel"
             value={profile.phone}
             onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="Optional"
           />
         </div>
@@ -140,14 +142,14 @@ export default function PersonalInfoSection() {
             type="text"
             value={profile.full_name}
             onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             required
           />
         </div>
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Update profile"}
         </button>
@@ -168,7 +170,7 @@ export default function PersonalInfoSection() {
             type="password"
             value={passwordForm.new_password}
             onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="••••••••"
             minLength={8}
           />
@@ -179,7 +181,7 @@ export default function PersonalInfoSection() {
             type="password"
             value={passwordForm.confirm}
             onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="Confirm"
           />
         </div>

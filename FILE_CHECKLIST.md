@@ -30,7 +30,6 @@ This file verifies all critical files are present in the codebase.
 - [x] `app/api/members/route.ts`
 - [x] `app/api/members/upload/route.ts`
 - [x] `app/api/members/[id]/send-email/route.ts`
-- [x] `app/api/members/[id]/mark-re-engaged/route.ts`
 - [x] `app/api/members/[id]/update-last-visit/route.ts`
 
 ## ✅ Campaigns Files

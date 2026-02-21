@@ -148,7 +148,23 @@ export function getHabitDecayIndex(
 }
 
 /**
+ * Format a camelCase flag key for display (e.g. noRecentVisits -> "No Recent Visits").
+ */
+export function formatFlagKeyForDisplay(key: string): string {
+  const labels: Record<string, string> = {
+    noRecentVisits: "No Recent Visits",
+    rapidDecline: "Rapid Decline",
+    largeGap: "Large Gap",
+    inconsistentPattern: "Inconsistent Pattern",
+    newMemberLowAttendance: "New Member Low Attendance",
+    decliningFrequency: "Declining Frequency",
+  };
+  return labels[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).trim();
+}
+
+/**
  * Short behavioural interpretation text for the member profile.
+ * Includes payment-failure stub when integration is available.
  */
 export function getBehaviourInterpretation(
   memberStage: MemberStage,
@@ -156,21 +172,33 @@ export function getBehaviourInterpretation(
   churnProbability: number,
   habitDecayIndex: number,
   visitsLast30Days: number,
-  daysSinceLastVisit: number | null
+  daysSinceLastVisit: number | null,
+  paymentFailureCount?: number
 ): string {
   const play = MEMBER_STAGE_PLAYS[memberStage];
-  if (memberStage === "churned") return "Member has cancelled. " + (play ?? "");
-  if (memberStage === "win_back_window") return "In the win-back window. " + (play ?? "");
+  const paymentNote =
+    paymentFailureCount != null && paymentFailureCount > 0
+      ? " Recent payment failures may be contributing to disengagement; consider reaching out to resolve any billing issues. "
+      : "";
+
+  if (memberStage === "churned")
+    return `This member has cancelled their membership. ${paymentNote}${play ?? ""}`;
+  if (memberStage === "win_back_window")
+    return `This member is in the win-back window. They have been inactive but have not yet cancelled. ${paymentNote}${play ?? ""}`;
   if (memberStage === "at_risk_silent_quit") {
-    if (churnProbability >= 70) return "High churn risk; prioritise contact. " + (play ?? "");
-    return "At-risk; silent quit risk. " + (play ?? "");
+    if (churnProbability >= 70)
+      return `High churn risk; prioritise contact soon. ${paymentNote}${play ?? ""}`;
+    return `At-risk member showing signs of silent quit. ${paymentNote}${play ?? ""}`;
   }
   if (memberStage === "emotional_disengagement")
-    return "Emotional disengagement detected. " + (play ?? "");
-  if (memberStage === "plateau_boredom_risk") return "Plateau or boredom risk. " + (play ?? "");
-  if (memberStage === "onboarding_vulnerability") return "New member; onboarding critical. " + (play ?? "");
-  if (memberStage === "habit_formation") return "Building habit; support consistency. " + (play ?? "");
+    return `Emotional disengagement detected. Interest may be waning. ${paymentNote}${play ?? ""}`;
+  if (memberStage === "plateau_boredom_risk")
+    return `Plateau or boredom risk. Consider new goals or challenges. ${play ?? ""}`;
+  if (memberStage === "onboarding_vulnerability")
+    return `New member; onboarding is critical in the first 30 days. ${play ?? ""}`;
+  if (memberStage === "habit_formation")
+    return `Building habit; support consistency with check-ins and encouragement. ${play ?? ""}`;
   if (visitsLast30Days >= 4 && (daysSinceLastVisit ?? 999) <= 7)
-    return "Strong momentum; maintain identity and community. " + (play ?? "");
-  return "Engaged; continue appropriate touchpoints. " + (play ?? "");
+    return `Strong momentum; maintain identity and community connection. ${play ?? ""}`;
+  return `Engaged; continue appropriate touchpoints. ${play ?? ""}`;
 }

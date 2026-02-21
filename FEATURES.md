@@ -95,7 +95,6 @@ This document lists all features implemented in the floCRM application to ensure
 - Send Engagement Email (with modal for template selection)
   - "We Haven't Seen You in a While" option
   - "Bring a Friend on Us" option
-- Mark as Re-engaged button
 - Update Last Visit button
 
 ### ✅ CSV Upload
@@ -259,7 +258,6 @@ This document lists all features implemented in the floCRM application to ensure
 - `/api/members` - GET members with filtering (status, risk, search)
 - `/api/members/upload` - POST CSV upload
 - `/api/members/[id]/send-email` - POST send engagement email
-- `/api/members/[id]/mark-re-engaged` - POST mark member as re-engaged
 - `/api/members/[id]/update-last-visit` - POST update last visit date
 
 ### ✅ Campaigns

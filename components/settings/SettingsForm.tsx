@@ -292,7 +292,7 @@ export default function SettingsForm({
             onClick={() => setActiveTab("profile")}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === "profile"
-                ? "border-blue-500 text-blue-600"
+                ? "border-lime-500 text-lime-600"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
             }`}
           >
@@ -302,7 +302,7 @@ export default function SettingsForm({
             onClick={() => setActiveTab("branding")}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === "branding"
-                ? "border-blue-500 text-blue-600"
+                ? "border-lime-500 text-lime-600"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
             }`}
           >
@@ -312,7 +312,7 @@ export default function SettingsForm({
             onClick={() => setActiveTab("membership-types")}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === "membership-types"
-                ? "border-blue-500 text-blue-600"
+                ? "border-lime-500 text-lime-600"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
             }`}
           >
@@ -322,7 +322,7 @@ export default function SettingsForm({
             onClick={() => setActiveTab("subscription")}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === "subscription"
-                ? "border-blue-500 text-blue-600"
+                ? "border-lime-500 text-lime-600"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
             }`}
           >
@@ -332,7 +332,7 @@ export default function SettingsForm({
             onClick={() => setActiveTab("templates")}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               activeTab === "templates"
-                ? "border-blue-500 text-blue-600"
+                ? "border-lime-500 text-lime-600"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
             }`}
           >
@@ -361,7 +361,7 @@ export default function SettingsForm({
                 id="gymName"
                 name="gymName"
                 defaultValue={gym?.name || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 required
               />
             </div>
@@ -374,7 +374,7 @@ export default function SettingsForm({
                 id="fullName"
                 name="fullName"
                 defaultValue={userProfile?.full_name || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 required
               />
             </div>
@@ -388,14 +388,14 @@ export default function SettingsForm({
                   placeholder="Enter postcode or address"
                   value={addressSearch}
                   onChange={(e) => setAddressSearch(e.target.value)}
-                  className="flex-grow rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="flex-grow rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 text-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   disabled={searchingAddress}
                 />
                 <button
                   type="button"
                   onClick={handleFindAddress}
                   disabled={searchingAddress}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
                 >
                   {searchingAddress ? "Searching..." : "Find Address"}
                 </button>
@@ -413,7 +413,7 @@ export default function SettingsForm({
                     name="address_line1"
                     value={addressFields.address_line1}
                     onChange={(e) => setAddressFields({ ...addressFields, address_line1: e.target.value })}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   />
                 </div>
                 <div>
@@ -426,7 +426,7 @@ export default function SettingsForm({
                     name="address_line2"
                     value={addressFields.address_line2}
                     onChange={(e) => setAddressFields({ ...addressFields, address_line2: e.target.value })}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -440,7 +440,7 @@ export default function SettingsForm({
                       name="city"
                       value={addressFields.city}
                       onChange={(e) => setAddressFields({ ...addressFields, city: e.target.value })}
-                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                     />
                   </div>
                   <div>
@@ -453,7 +453,7 @@ export default function SettingsForm({
                       name="postcode"
                       value={addressFields.postcode}
                       onChange={(e) => setAddressFields({ ...addressFields, postcode: e.target.value })}
-                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                     />
                   </div>
                 </div>
@@ -467,7 +467,7 @@ export default function SettingsForm({
                     name="country"
                     value={addressFields.country}
                     onChange={(e) => setAddressFields({ ...addressFields, country: e.target.value })}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   />
                 </div>
               </div>
@@ -475,7 +475,7 @@ export default function SettingsForm({
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>
@@ -515,7 +515,7 @@ export default function SettingsForm({
                   />
                   <label
                     htmlFor="logoUpload"
-                    className="cursor-pointer inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="cursor-pointer inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
                   >
                     {uploadingLogo ? "Uploading..." : logoPreview ? "Change Logo" : "Upload Logo"}
                   </label>
@@ -526,7 +526,7 @@ export default function SettingsForm({
                     <button
                       type="button"
                       onClick={handleLogoUpload}
-                      className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="mt-2 rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
                     >
                       Upload Now
                     </button>
@@ -555,7 +555,7 @@ export default function SettingsForm({
                       type="text"
                       value={brandColors.primary}
                       onChange={(e) => setBrandColors({ ...brandColors, primary: e.target.value })}
-                      className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                       placeholder="#2563EB"
                     />
                   </div>
@@ -576,7 +576,7 @@ export default function SettingsForm({
                       type="text"
                       value={brandColors.secondary}
                       onChange={(e) => setBrandColors({ ...brandColors, secondary: e.target.value })}
-                      className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                       placeholder="#1E40AF"
                     />
                   </div>
@@ -591,7 +591,7 @@ export default function SettingsForm({
               <button
                 type="submit"
                 disabled={loading || uploadingLogo}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
               >
                 {loading ? "Saving..." : "Save Branding"}
               </button>
@@ -618,7 +618,7 @@ export default function SettingsForm({
                     gym?.subscription_status === "active"
                       ? "bg-green-100 text-green-800"
                       : gym?.subscription_status === "trialing"
-                      ? "bg-blue-100 text-blue-800"
+                      ? "bg-lime-100 text-lime-800"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >

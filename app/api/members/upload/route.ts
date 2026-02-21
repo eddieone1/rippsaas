@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import { normalizeCsvHeader } from "@/lib/csv-headers";
 import { calculateChurnRisk } from "@/lib/churn-risk";
+import { calculateCommitmentScore } from "@/lib/commitment-score";
 import { geocodeAddress, calculateDistance } from "@/lib/proximity";
 import { recalculateCommitmentScoresForGym } from "@/lib/jobs/commitment-scores";
 import { detectAtRiskMembersForGym } from "@/lib/jobs/at-risk-detection";
+import { requireApiAuth } from "@/lib/auth/guards";
+import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 
 
 function normalizeName(s: string): string {
@@ -15,34 +17,14 @@ function normalizeName(s: string): string {
 
 export async function POST(request: Request) {
   try {
+    const { gymId } = await requireApiAuth();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
-    }
 
     // Fetch gym coordinates for distance calculation
     const { data: gym, error: gymError } = await supabase
       .from("gyms")
       .select("latitude, longitude, postcode")
-      .eq("id", userProfile.gym_id)
+      .eq("id", gymId)
       .single();
 
     if (gymError) {
@@ -54,10 +36,7 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
+      return errorResponse("No file provided", 400);
     }
 
     // Parse CSV - normalize headers to handle common variations
@@ -86,25 +65,22 @@ export async function POST(request: Request) {
     });
 
     if (parseResult.errors.length > 0) {
-      return NextResponse.json(
-        { error: `CSV parsing errors: ${parseResult.errors.map((e) => e.message).join(", ")}` },
-        { status: 400 }
+      return errorResponse(
+        `CSV parsing errors: ${parseResult.errors.map((e) => e.message).join(", ")}`,
+        400
       );
     }
 
     const rows = parseResult.data;
     if (rows.length === 0) {
-      return NextResponse.json(
-        { error: "CSV file is empty" },
-        { status: 400 }
-      );
+      return errorResponse("CSV file is empty", 400);
     }
 
     // Fetch existing members for this gym to recognise and update (dedupe by name, DOB, email)
     const { data: existingMembers } = await supabase
       .from("members")
       .select("id, first_name, last_name, email, date_of_birth")
-      .eq("gym_id", userProfile.gym_id);
+      .eq("gym_id", gymId);
 
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     const findExistingMember = (
@@ -209,7 +185,7 @@ export async function POST(request: Request) {
       let billingLongitude: number | null = null;
 
       if (gym?.latitude && gym?.longitude && (billingPostcode || billingAddress || billingCity)) {
-        // Try to geocode billing address (prioritize postcode, then full address)
+        // Try to geocode billing address (prioritise postcode, then full address)
         const addressToGeocode = billingPostcode || (billingAddress && billingCity ? `${billingAddress}, ${billingCity}` : billingAddress || billingCity);
         
         if (addressToGeocode) {
@@ -232,21 +208,24 @@ export async function POST(request: Request) {
         }
       }
 
-      // Recalculate churn risk with all available factors
+      // Calculate commitment score first (needed for new risk calculation)
+      const lastVisitDate = row.last_visit_date || (allVisits.length > 0 ? allVisits[0] : null);
+      const commitmentResult = calculateCommitmentScore({
+        joinedDate,
+        lastVisitDate,
+        visitDates: allVisits,
+        expectedVisitsPerWeek: 2, // Default assumption
+      });
+
+      // Recalculate churn risk based on commitment score
       const riskResultWithDistance = calculateChurnRisk({
-        last_visit_date: row.last_visit_date || (allVisits.length > 0 ? allVisits[0] : null),
+        last_visit_date: lastVisitDate,
         joined_date: joinedDate,
-        has_received_campaign: false,
-        distance_from_gym_km: distanceFromGymKm,
-        age: (rowAny.age as number | null) ?? null,
-        employment_status: (rowAny.employment_status ?? rowAny["employment/student_status"]) as string | null ?? null,
-        student_status: (rowAny.student_status ?? ((rowAny["employment/student_status"] as string)?.toLowerCase().includes("student") ? "yes" : null)) as string | null ?? null,
-        visits_last_30_days: 0, // Will be calculated after member is created
-        total_visits: null,
+        commitment_score: commitmentResult.score,
       });
 
       const memberData: any = {
-        gym_id: userProfile.gym_id,
+        gym_id: gymId,
         first_name: row.first_name.trim(),
         last_name: row.last_name.trim(),
         email: row.email?.trim() || null,
@@ -254,6 +233,8 @@ export async function POST(request: Request) {
         joined_date: joinedDate,
         last_visit_date: row.last_visit_date || (allVisits.length > 0 ? allVisits[0] : null),
         status,
+        commitment_score: commitmentResult.score,
+        commitment_score_calculated_at: new Date().toISOString(),
         churn_risk_score: riskResultWithDistance.score,
         churn_risk_level: riskResultWithDistance.level,
         last_risk_calculated_at: new Date().toISOString(),
@@ -278,6 +259,8 @@ export async function POST(request: Request) {
           phone: memberData.phone,
           last_visit_date: memberData.last_visit_date,
           status: memberData.status,
+          commitment_score: memberData.commitment_score,
+          commitment_score_calculated_at: memberData.commitment_score_calculated_at,
           churn_risk_score: memberData.churn_risk_score,
           churn_risk_level: memberData.churn_risk_level,
           last_risk_calculated_at: memberData.last_risk_calculated_at,
@@ -298,10 +281,7 @@ export async function POST(request: Request) {
     }
 
     if (errors.length > 0 && membersToInsert.length === 0 && membersToUpdate.length === 0) {
-      return NextResponse.json(
-        { error: "All rows have errors", errors },
-        { status: 400 }
-      );
+      return errorResponse("All rows have errors", 400, { errors });
     }
 
     let imported = 0;
@@ -313,7 +293,7 @@ export async function POST(request: Request) {
         .from("members")
         .update(updateData)
         .eq("id", id)
-        .eq("gym_id", userProfile.gym_id);
+        .eq("gym_id", gymId);
 
       if (updateError) {
         errors.push(`Failed to update member ${id}: ${updateError.message}`);
@@ -350,10 +330,7 @@ export async function POST(request: Request) {
         .select("id");
 
       if (insertError) {
-        return NextResponse.json(
-          { error: `Failed to insert members: ${insertError.message}` },
-          { status: 500 }
-        );
+        return errorResponse(`Failed to insert members: ${insertError.message}`, 500);
       }
 
       imported += batch.length;
@@ -372,24 +349,19 @@ export async function POST(request: Request) {
     }
 
     // Recalibrate commitment scores, member stages, and at-risk metrics for the gym (rolling data)
-    void recalculateCommitmentScoresForGym(userProfile.gym_id).catch((e) =>
+    void recalculateCommitmentScoresForGym(gymId).catch((e) =>
       console.error("Post-upload commitment recalculation:", e)
     );
-    void detectAtRiskMembersForGym(userProfile.gym_id).catch((e) =>
+    void detectAtRiskMembersForGym(gymId).catch((e) =>
       console.error("Post-upload at-risk recalculation:", e)
     );
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       imported,
       updated,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    console.error("Member upload error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Member upload error");
   }
 }

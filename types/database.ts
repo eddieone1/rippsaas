@@ -23,6 +23,10 @@ export interface Database {
           sender_name: string | null;
           sender_email: string | null;
           sms_from_number: string | null;
+          resend_api_key: string | null;
+          twilio_account_sid: string | null;
+          twilio_auth_token: string | null;
+          auto_interventions_enabled: boolean;
         };
         Insert: {
           id?: string;
@@ -37,6 +41,10 @@ export interface Database {
           sender_name?: string | null;
           sender_email?: string | null;
           sms_from_number?: string | null;
+          resend_api_key?: string | null;
+          twilio_account_sid?: string | null;
+          twilio_auth_token?: string | null;
+          auto_interventions_enabled?: boolean;
         };
         Update: {
           id?: string;
@@ -51,6 +59,10 @@ export interface Database {
           sender_name?: string | null;
           sender_email?: string | null;
           sms_from_number?: string | null;
+          resend_api_key?: string | null;
+          twilio_account_sid?: string | null;
+          twilio_auth_token?: string | null;
+          auto_interventions_enabled?: boolean;
         };
       };
       users: {
@@ -59,7 +71,7 @@ export interface Database {
           gym_id: string;
           email: string;
           full_name: string;
-          role: 'owner' | 'admin';
+          role: 'owner' | 'admin' | 'coach';
           created_at: string;
         };
         Insert: {
@@ -67,7 +79,7 @@ export interface Database {
           gym_id: string;
           email: string;
           full_name: string;
-          role?: 'owner' | 'admin';
+          role?: 'owner' | 'admin' | 'coach';
           created_at?: string;
         };
         Update: {
@@ -75,7 +87,7 @@ export interface Database {
           gym_id?: string;
           email?: string;
           full_name?: string;
-          role?: 'owner' | 'admin';
+          role?: 'owner' | 'admin' | 'coach';
           created_at?: string;
         };
       };
@@ -213,6 +225,73 @@ export interface Database {
           subject?: string;
           body?: string;
           channel?: 'email' | 'sms';
+          created_at?: string;
+        };
+      };
+      member_coaches: {
+        Row: {
+          id: string;
+          member_id: string;
+          coach_id: string;
+          gym_id: string;
+          assigned_at: string;
+          assigned_by: string | null;
+          saved: boolean;
+        };
+        Insert: {
+          id?: string;
+          member_id: string;
+          coach_id: string;
+          gym_id: string;
+          assigned_at?: string;
+          assigned_by?: string | null;
+          saved?: boolean;
+        };
+        Update: {
+          id?: string;
+          member_id?: string;
+          coach_id?: string;
+          gym_id?: string;
+          assigned_at?: string;
+          assigned_by?: string | null;
+          saved?: boolean;
+        };
+      };
+      coach_touches: {
+        Row: {
+          id: string;
+          member_id: string;
+          coach_id: string;
+          gym_id: string;
+          channel: 'call' | 'sms' | 'email' | 'in_person' | 'dm' | 'play_launch' | 'auto_sms';
+          type: 'coach' | 'system';
+          outcome: 'replied' | 'booked' | 'no_response' | 'follow_up' | 'declined';
+          notes: string | null;
+          play_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          member_id: string;
+          coach_id: string;
+          gym_id: string;
+          channel: 'call' | 'sms' | 'email' | 'in_person' | 'dm' | 'play_launch' | 'auto_sms';
+          type?: 'coach' | 'system';
+          outcome: 'replied' | 'booked' | 'no_response' | 'follow_up' | 'declined';
+          notes?: string | null;
+          play_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          member_id?: string;
+          coach_id?: string;
+          gym_id?: string;
+          channel?: 'call' | 'sms' | 'email' | 'in_person' | 'dm' | 'play_launch' | 'auto_sms';
+          type?: 'coach' | 'system';
+          outcome?: 'replied' | 'booked' | 'no_response' | 'follow_up' | 'declined';
+          notes?: string | null;
+          play_id?: string | null;
           created_at?: string;
         };
       };

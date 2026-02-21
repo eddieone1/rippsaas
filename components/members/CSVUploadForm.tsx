@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { normalizeCsvHeader } from "@/lib/csv-headers";
@@ -19,16 +19,15 @@ interface CSVRow {
 
 export default function CSVUploadForm() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CSVRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
+  const processFile = useCallback((selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv")) {
       setError("Please upload a CSV file");
       return;
@@ -38,7 +37,6 @@ export default function CSVUploadForm() {
     setError(null);
     setValidationErrors([]);
 
-    // Parse CSV for preview - normalize headers
     Papa.parse(selectedFile, {
       header: true,
       skipEmptyLines: true,
@@ -50,7 +48,6 @@ export default function CSVUploadForm() {
           return;
         }
 
-        // Required: first_name, last_name, email, date_of_birth, status. Visits optional (0–20).
         const requiredHeaders = ["first_name", "last_name", "email", "date_of_birth", "status"];
         const headers = Object.keys(data[0] || {});
         const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
@@ -60,7 +57,6 @@ export default function CSVUploadForm() {
           return;
         }
 
-        // Validate first 10 rows
         const errors: string[] = [];
         const dateRe = /^\d{4}-\d{2}-\d{2}$/;
         data.slice(0, 10).forEach((row, index) => {
@@ -71,7 +67,6 @@ export default function CSVUploadForm() {
           if (row.date_of_birth && !dateRe.test(row.date_of_birth)) {
             errors.push(`Row ${index + 2}: Invalid date_of_birth (YYYY-MM-DD)`);
           }
-          // Visits: 0–20 allowed; no requirement for at least one visit
           if (row.joined_date && !dateRe.test(row.joined_date)) {
             errors.push(`Row ${index + 2}: Invalid joined_date (YYYY-MM-DD)`);
           }
@@ -84,12 +79,56 @@ export default function CSVUploadForm() {
           setValidationErrors(errors);
         }
 
-        setPreview(data.slice(0, 5)); // Show first 5 rows as preview
+        setPreview(data.slice(0, 5));
       },
-      error: (error) => {
-        setError(`Failed to parse CSV: ${error.message}`);
+      error: (parseError) => {
+        setError(`Failed to parse CSV: ${parseError.message}`);
       },
     });
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) processFile(selectedFile);
+  };
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const droppedFile = e.dataTransfer.files?.[0];
+      if (droppedFile) processFile(droppedFile);
+    },
+    [processFile]
+  );
+
+  const clearFile = () => {
+    setFile(null);
+    setPreview([]);
+    setError(null);
+    setValidationErrors([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async () => {
@@ -118,9 +157,9 @@ export default function CSVUploadForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle "All rows have errors" with detailed error messages
-        if (data.errors && Array.isArray(data.errors)) {
-          setValidationErrors(data.errors);
+        const detailErrors = data.details?.errors ?? data.errors;
+        if (detailErrors && Array.isArray(detailErrors)) {
+          setValidationErrors(detailErrors);
           setError(data.error || "All rows have errors. Please check the validation errors below.");
         } else {
           setError(data.error || "Failed to upload members");
@@ -129,12 +168,13 @@ export default function CSVUploadForm() {
         return;
       }
 
+      const result = data.data ?? data;
       const params = new URLSearchParams();
-      if (data.imported) params.set("imported", String(data.imported));
-      if (data.updated) params.set("updated", String(data.updated));
+      if (result.imported) params.set("imported", String(result.imported));
+      if (result.updated) params.set("updated", String(result.updated));
       router.push(`/dashboard?${params.toString()}`);
       router.refresh();
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
       setLoading(false);
     }
@@ -159,45 +199,98 @@ export default function CSVUploadForm() {
         </div>
       )}
 
-      <div className="rounded-lg border-2 border-dashed border-gray-300 p-8">
-        <div className="text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            stroke="currentColor"
-            fill="none"
-            viewBox="0 0 48 48"
-          >
-            <path
-              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {/* Drop zone */}
+      <div
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`relative rounded-xl border-2 border-dashed p-8 transition-colors duration-150 ${
+          isDragging
+            ? "border-lime-500 bg-lime-50"
+            : file
+              ? "border-lime-400 bg-lime-50/40"
+              : "border-gray-300 bg-white hover:border-gray-400"
+        }`}
+      >
+        {file ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileChange}
             />
-          </svg>
-          <div className="mt-4">
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer rounded-md bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500"
-            >
-              <span>Upload CSV file</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-lime-100 text-lime-700">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M9 15l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {(file.size / 1024).toFixed(1)} KB
+                    {preview.length > 0 && ` · ${preview.length}+ rows parsed`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Change file
+                </button>
+                <button
+                  type="button"
+                  onClick={clearFile}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+              <svg
+                className={`h-7 w-7 transition-colors ${isDragging ? "text-lime-600" : "text-gray-400"}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <p className="mt-4 text-sm font-medium text-gray-900">
+              {isDragging ? "Drop your CSV file here" : "Drag & drop your CSV file here"}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">or</p>
+            <div className="relative mt-2 inline-block">
               <input
-                id="file-upload"
-                name="file-upload"
+                ref={fileInputRef}
                 type="file"
                 accept=".csv"
-                className="sr-only"
                 onChange={handleFileChange}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               />
-            </label>
-            <p className="mt-2 text-xs text-gray-500">
-              Required: first_name, last_name, email, date_of_birth, visits (semicolon-separated dates), status (active/inactive). Optional: joined_date, address. Multiple visits per member improve habit strength analysis. Existing members matched by name + date_of_birth or email are updated; data is merged for rolling analysis.
-            </p>
-          </div>
-        </div>
-
-        {file && (
-          <div className="mt-4 text-center text-sm text-gray-600">
-            Selected: {file.name}
+              <span className="inline-flex items-center rounded-md border border-lime-500 bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-lime-400">
+                Browse files
+              </span>
+            </div>
+            <p className="mt-3 text-xs text-gray-400">CSV files only</p>
           </div>
         )}
       </div>
@@ -219,6 +312,9 @@ export default function CSVUploadForm() {
                     Email
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Date of Birth
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     Joined Date
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
@@ -232,7 +328,8 @@ export default function CSVUploadForm() {
                     <td className="px-4 py-2 text-sm text-gray-900">{row.first_name}</td>
                     <td className="px-4 py-2 text-sm text-gray-900">{row.last_name}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{row.email || "-"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{row.joined_date}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{row.date_of_birth || "-"}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{row.joined_date || "-"}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{row.last_visit_date || "-"}</td>
                   </tr>
                 ))}
@@ -247,7 +344,7 @@ export default function CSVUploadForm() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Importing members..." : "Import Members"}
           </button>

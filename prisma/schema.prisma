@@ -1,0 +1,190 @@
+// Automated Intervention System – Prisma schema
+// Run: npx prisma generate && npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TriggerType {
+  DAILY_BATCH
+  EVENT_WEBHOOK
+}
+
+enum Channel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum InterventionStatus {
+  CANDIDATE
+  PENDING_APPROVAL
+  SCHEDULED
+  SENT
+  DELIVERED
+  FAILED
+  CANCELED
+}
+
+enum MessageEventType {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  REPLIED
+}
+
+enum OutcomeType {
+  CONTACTED
+  REPLIED
+  BOOKED
+  RETURNED
+  PAYMENT_RESOLVED
+  FROZEN
+  CANCELLED
+  SAVED
+}
+
+model Tenant {
+  id       String   @id @default(cuid())
+  name    String
+  timezone String   @default("Europe/London")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       Member[]
+  riskSnapshots RiskSnapshot[]
+  plays         Play[]
+  interventions Intervention[]
+  outcomes      Outcome[]
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  tenantId    String
+  externalId  String?  @map("external_id")
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  email       String?
+  phone       String?
+  consentEmail   Boolean @default(true)  @map("consent_email")
+  consentSms     Boolean @default(true)  @map("consent_sms")
+  consentWhatsapp Boolean @default(false) @map("consent_whatsapp")
+  doNotContact Boolean @default(false)   @map("do_not_contact")
+  createdAt   DateTime @default(now())   @map("created_at")
+  updatedAt   DateTime @updatedAt        @map("updated_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  riskSnapshots   RiskSnapshot[]
+  interventions   Intervention[]
+  outcomes        Outcome[]
+
+  @@index([tenantId])
+  @@map("intervention_members")
+}
+
+model RiskSnapshot {
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  memberId         String   @map("member_id")
+  riskScore        Int      @map("risk_score")   // 0-100
+  primaryRiskReason String? @map("primary_risk_reason")
+  computedAt       DateTime @map("computed_at")
+  createdAt        DateTime @default(now())      @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, computedAt])
+  @@index([memberId])
+  @@map("intervention_risk_snapshots")
+}
+
+model Play {
+  id                      String      @id @default(cuid())
+  tenantId                String      @map("tenant_id")
+  name                    String
+  description             String?     @db.Text
+  isActive                 Boolean     @default(true) @map("is_active")
+  triggerType             TriggerType @map("trigger_type")
+  minRiskScore            Int         @map("min_risk_score")
+  channels                Channel[]   @default([])
+  requiresApproval        Boolean     @default(false) @map("requires_approval")
+  quietHoursStart         String      @default("21:00") @map("quiet_hours_start")
+  quietHoursEnd           String      @default("08:00") @map("quiet_hours_end")
+  maxMessagesPerMemberPerWeek Int     @default(2)     @map("max_messages_per_member_per_week")
+  cooldownDays            Int         @default(3)     @map("cooldown_days")
+  templateSubject         String?     @map("template_subject") @db.Text
+  templateBody            String      @map("template_body")    @db.Text
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt      @map("updated_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  interventions  Intervention[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive, triggerType])
+  @@map("intervention_plays")
+}
+
+model Intervention {
+  id                 String              @id @default(cuid())
+  tenantId           String              @map("tenant_id")
+  playId             String              @map("play_id")
+  memberId           String              @map("member_id")
+  status             InterventionStatus  @default(CANDIDATE)
+  channel            Channel
+  scheduledAt        DateTime?           @map("scheduled_at")
+  sentAt             DateTime?           @map("sent_at")
+  providerMessageId  String?             @map("provider_message_id")
+  reason             String?             @db.Text
+  renderedSubject    String?             @map("rendered_subject") @db.Text
+  renderedBody       String              @map("rendered_body")    @db.Text
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt      @map("updated_at")
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  play     Play          @relation(fields: [playId], references: [id], onDelete: Cascade)
+  member   Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  events   MessageEvent[]
+
+  @@index([tenantId, status, createdAt])
+  @@index([playId, memberId])
+  @@map("intervention_interventions")
+}
+
+model MessageEvent {
+  id            String           @id @default(cuid())
+  interventionId String          @map("intervention_id")
+  type          MessageEventType
+  payload       Json?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  intervention Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([interventionId, createdAt])
+  @@map("intervention_message_events")
+}
+
+model Outcome {
+  id        String      @id @default(cuid())
+  tenantId  String      @map("tenant_id")
+  memberId  String      @map("member_id")
+  type      OutcomeType
+  notes     String?     @db.Text
+  occurredAt DateTime   @map("occurred_at")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, occurredAt])
+  @@index([memberId])
+  @@map("intervention_outcomes")
+}

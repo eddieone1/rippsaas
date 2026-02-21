@@ -10,6 +10,38 @@ export type AuthContext = {
 };
 
 /**
+ * Error thrown by API auth guards. Carries an HTTP status code so
+ * route handlers can return a proper JSON error response.
+ */
+export class ApiAuthError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiAuthError";
+    this.status = status;
+  }
+}
+
+/**
+ * API-route variant of requireAuth.
+ * Instead of redirecting, throws an ApiAuthError with the appropriate status
+ * code so the calling route can return a JSON error.
+ */
+export async function requireApiAuth(): Promise<AuthContext> {
+  const { user, userProfile, gymId } = await getGymContext();
+
+  if (!user?.id) {
+    throw new ApiAuthError("Unauthorized", 401);
+  }
+
+  if (!gymId || !userProfile) {
+    throw new ApiAuthError("Gym not found. Complete onboarding first.", 404);
+  }
+
+  return { userProfile, gymId };
+}
+
+/**
  * Require authenticated user with a gym. Redirects to /login if not signed in or no gym.
  * Use in layout and server components; in API routes this will send a redirect response.
  */
@@ -20,14 +52,15 @@ export async function requireAuth(): Promise<AuthContext> {
     redirect("/login");
   }
 
+  // If user is authenticated but has no gym, redirect to onboarding
   if (!gymId || !userProfile) {
-    redirect("/login");
+    redirect("/onboarding/gym-info");
   }
 
   return { userProfile, gymId };
 }
 
-const ACTION_ROLES: Record<string, ("owner" | "admin")[]> = {
+const ACTION_ROLES: Record<string, ("owner" | "admin" | "coach")[]> = {
   manage_settings: ["owner"],
   invite_users: ["owner"],
 };

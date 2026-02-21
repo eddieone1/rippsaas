@@ -11,6 +11,12 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        rip: {
+          bg: "#1F2121",
+          "bg-2": "#2F3131",
+          black: "#0B0B0B",
+          accent: "#9EFF00",
+        },
       },
     },
   },

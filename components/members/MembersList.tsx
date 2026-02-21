@@ -37,23 +37,16 @@ function getRiskBadgeColor(level: string) {
     case "medium":
       return "bg-yellow-100 text-yellow-800";
     case "low":
-      return "bg-blue-100 text-blue-800";
+      return "bg-lime-100 text-lime-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
 }
 
+import { formatMembershipStatus, getMembershipStatusBadgeColor } from "@/lib/membership-status";
+
 function getStatusBadgeColor(status: string) {
-  switch (status) {
-    case "active":
-      return "bg-green-100 text-green-800";
-    case "inactive":
-      return "bg-yellow-100 text-yellow-800";
-    case "cancelled":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
+  return getMembershipStatusBadgeColor(status);
 }
 
 function getPaymentStatusBadgeColor(status: string | null) {
@@ -106,8 +99,9 @@ export default function MembersList({
     try {
       const response = await fetch(`/api/members`);
       const data = await response.json();
-      if (data.members) {
-        setAllMembers(data.members);
+      const members = data.data?.members ?? data.members;
+      if (members) {
+        setAllMembers(members);
       }
     } catch (err) {
       // Silently fail - counts are not critical
@@ -145,7 +139,7 @@ export default function MembersList({
         return;
       }
 
-      const fetchedMembers = data.members || [];
+      const fetchedMembers = data.data?.members ?? data.members ?? [];
       setMembers(fetchedMembers);
       // If no filters, store all members for count calculations
       if (statusFilter === "all" && riskFilter === "all") {
@@ -240,7 +234,7 @@ export default function MembersList({
         </div>
         <Link
           href="/members/upload"
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400"
         >
           Upload Members
         </Link>
@@ -251,14 +245,14 @@ export default function MembersList({
         <div className="flex flex-col gap-4">
           {/* Status and Risk Filters */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Status Filter */}
+            {/* Membership status filter */}
             <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium text-gray-700 self-center">Status:</span>
+              <span className="text-sm font-medium text-gray-700 self-center">Membership status:</span>
             <button
               onClick={() => handleStatusFilterChange("all")}
               className={`rounded-md px-4 py-2 text-sm font-medium ${
                 localStatusFilter === "all"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-lime-500 text-gray-900"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -333,7 +327,7 @@ export default function MembersList({
                 onClick={() => handleRiskFilterChange("low")}
                 className={`rounded-md px-4 py-2 text-sm font-medium ${
                   localRiskFilter === "low"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-lime-500 text-gray-900"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -359,11 +353,11 @@ export default function MembersList({
               placeholder="Search by name, email, or phone..."
               value={localSearchQuery}
               onChange={(e) => setLocalSearchQuery(e.target.value)}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             />
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400"
             >
               Search
             </button>
@@ -389,7 +383,7 @@ export default function MembersList({
                     Contact
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Status
+                    Membership Status
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Last Visit
@@ -438,7 +432,7 @@ export default function MembersList({
                         <span
                           className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getStatusBadgeColor(member.status)}`}
                         >
-                          {member.status}
+                          {formatMembershipStatus(member.status)}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600">
@@ -487,8 +481,8 @@ export default function MembersList({
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-sm">
                         <Link
-                          href={`/members/${member.id}`}
-                          className="text-blue-600 hover:text-blue-900"
+                          href={`/members/${member.id}?from=members`}
+                          className="text-lime-600 hover:text-lime-900"
                         >
                           View →
                         </Link>

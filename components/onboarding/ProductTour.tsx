@@ -24,69 +24,43 @@ export default function ProductTour({ userId, showTour, onComplete }: ProductTou
 
   const tourSteps: TourStep[] = [
     {
-      id: "dashboard-overview",
+      id: "welcome",
       title: "Welcome to Rip! 👋",
-      content: "This is your Retention Dashboard. Here you can monitor members at risk of leaving and track your engagement campaigns. Let's take a quick tour of the key features.",
+      content: "You'll get value in 3 steps: upload your members, send your first outreach, then see which messages actually work. Let's go!",
       position: "center",
     },
     {
-      id: "stats-cards",
-      title: "Dashboard Statistics",
-      content: "These cards show your key metrics: total active members, members at risk, campaigns sent this month, and re-engagement rates. Keep an eye on these to track your gym's retention performance.",
+      id: "upload",
+      title: "Step 1: Upload members",
+      content: "Upload your member list via CSV to start tracking who's at risk. Use the 'Get started' checklist to guide you, or head to Members → Upload.",
       target: "[data-tour='stats-cards']",
       position: "bottom",
     },
     {
-      id: "members-table",
-      title: "Members at Risk",
-      content: "This table shows members who are at risk of churning, sorted by risk level. Click 'View Details' to see more information about each member and take action.",
+      id: "attention",
+      title: "Step 2: Reach out to at-risk members",
+      content: "The 'Who needs attention today' list shows your most urgent members. Use the Email button to send a quick message—or click View for the full profile.",
       target: "[data-tour='members-table']",
       position: "top",
     },
     {
-      id: "navigation",
-      title: "Navigation Menu",
-      content: "Use the navigation bar to access different sections: Dashboard (current page), Members (view all members), Campaigns (run engagement campaigns), and Settings (manage your gym profile and branding).",
-      target: "[data-tour='navigation']",
-      position: "bottom",
-    },
-    {
-      id: "members-page",
-      title: "Members Page",
-      content: "Click 'Members' in the navigation to view all your members. You can filter by status (active/inactive/cancelled) and risk level, search by name or email, and upload new members via CSV.",
-      target: "[data-tour='members-nav']",
-      position: "bottom",
-    },
-    {
-      id: "campaigns-page",
-      title: "Campaigns Page",
-      content: "Use the 'Campaigns' page to create and send automated engagement emails or SMS to members who haven't visited in a while. You can create custom campaigns or use quick-run buttons for 21+, 30+, or 60+ days inactive members.",
+      id: "plays",
+      title: "Plays = Your outreach",
+      content: "Go to Plays to run campaigns or set up automated messages. Quick-run options for 21+, 30+, or 60+ days inactive.",
       target: "[data-tour='campaigns-nav']",
       position: "bottom",
     },
     {
-      id: "settings-page",
-      title: "Settings Page",
-      content: "In 'Settings', you can manage your gym profile, upload your logo and set brand colours, create membership types, and manage email templates. Customise your branding to make emails look professional!",
-      target: "[data-tour='settings-nav']",
+      id: "insights",
+      title: "Step 3: See what works",
+      content: "Insights shows which messages bring members back. Rip is the only platform that proves which outreach actually works.",
+      target: "[data-tour='navigation']",
       position: "bottom",
     },
     {
-      id: "member-actions",
-      title: "Member Actions",
-      content: "When viewing a member's detail page, you can send engagement emails (friendly 'we miss you' messages or 'bring a friend' offers), mark them as re-engaged, or update their last visit date.",
-      position: "center",
-    },
-    {
-      id: "churn-risk",
-      title: "Churn Risk Calculation",
-      content: "Members are automatically scored based on attendance, payment patterns, booking frequency, engagement, distance from gym, age, and employment status. High risk members need immediate attention!",
-      position: "center",
-    },
-    {
       id: "complete",
-      title: "You're All Set! 🎉",
-      content: "You now know the basics of Rip! Start by uploading your member list via CSV, then explore the Members and Campaigns pages. If you need help, check the Settings page for more options. Happy retaining!",
+      title: "You're all set! 🎉",
+      content: "Start with uploading your member list, then send your first outreach. Check Insights in a few weeks to see what's working. Happy retaining!",
       position: "center",
     },
   ];
@@ -166,7 +140,7 @@ export default function ProductTour({ userId, showTour, onComplete }: ProductTou
           {/* Progress Bar */}
           <div className="h-1 bg-gray-200">
             <div
-              className="h-full bg-blue-600 transition-all duration-300"
+              className="h-full bg-lime-500 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -185,9 +159,9 @@ export default function ProductTour({ userId, showTour, onComplete }: ProductTou
                   key={index}
                   className={`h-2 w-2 rounded-full transition-colors ${
                     index === currentStep
-                      ? "bg-blue-600"
+                      ? "bg-lime-500"
                       : index < currentStep
-                      ? "bg-blue-300"
+                      ? "bg-lime-300"
                       : "bg-gray-300"
                   }`}
                 />
@@ -213,7 +187,7 @@ export default function ProductTour({ userId, showTour, onComplete }: ProductTou
                 )}
                 <button
                   onClick={handleNext}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400"
                 >
                   {currentStep === tourSteps.length - 1 ? "Get Started!" : "Next"}
                 </button>

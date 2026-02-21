@@ -69,7 +69,7 @@ export default function MembershipTypeSelector({
     return (
       <div className="text-sm text-gray-600">
         No membership types available. 
-        <Link href="/settings" className="text-blue-600 hover:text-blue-800 ml-1">
+        <Link href="/settings" className="text-lime-600 hover:text-lime-800 ml-1">
           Create one in Settings
         </Link>
       </div>
@@ -82,7 +82,7 @@ export default function MembershipTypeSelector({
         value={selectedTypeId}
         onChange={handleChange}
         disabled={loading}
-        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <option value="">No membership type</option>
         {membershipTypes.map((type) => (

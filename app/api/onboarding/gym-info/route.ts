@@ -48,11 +48,45 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found. Please complete signup first." },
-        { status: 404 }
-      );
+    let gymId = userProfile?.gym_id;
+
+    // If user doesn't have a gym_id, create one (edge case - should have been created during signup)
+    if (!gymId) {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+
+      const { data: newGym, error: createGymError } = await adminClient
+        .from("gyms")
+        .insert({
+          name: "My Gym", // Will be updated below
+          owner_email: user.email || "",
+          subscription_status: "trialing",
+          trial_ends_at: trialEndsAt.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (createGymError || !newGym) {
+        return NextResponse.json(
+          { error: `Failed to create gym: ${createGymError?.message || "Unknown error"}` },
+          { status: 500 }
+        );
+      }
+
+      gymId = newGym.id;
+
+      // Update user profile with gym_id
+      const { error: updateUserError } = await adminClient
+        .from("users")
+        .update({ gym_id: gymId })
+        .eq("id", user.id);
+
+      if (updateUserError) {
+        return NextResponse.json(
+          { error: `Failed to link gym to user: ${updateUserError.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     // Update gym with address information
@@ -79,7 +113,7 @@ export async function POST(request: Request) {
     const { error: gymError } = await adminClient
       .from("gyms")
       .update(gymUpdate)
-      .eq("id", userProfile.gym_id);
+      .eq("id", gymId);
 
     if (gymError) {
       return NextResponse.json(

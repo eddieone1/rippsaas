@@ -35,14 +35,14 @@ export default function SettingsMembersSection() {
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Members</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">Members</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Upload or update member data from CSV. Data from each upload is merged with existing data for rolling analysis.
+        Upload or update member data from CSV. Needed for churn scoring and at-risk detection. Data merges with existing for rolling analysis.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
           href="/members/upload"
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400"
         >
           Upload CSV
         </Link>

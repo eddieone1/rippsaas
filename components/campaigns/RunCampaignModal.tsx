@@ -11,9 +11,11 @@ interface Template {
 }
 
 interface RunCampaignModalProps {
+  gymId: string;
   triggerDays: number;
   templates: Template[];
   onClose: () => void;
+  recommendedTemplateId?: string;
   onRun: (config: {
     triggerDays: number;
     channel: "email" | "sms";
@@ -27,9 +29,12 @@ interface RunCampaignModalProps {
   loading: boolean;
   initialTemplateId?: string;
   initialChannel?: "email" | "sms";
+  initialTargetSegment?: "low" | "medium" | "high" | "all";
+  initialIncludeCancelled?: boolean;
 }
 
 export default function RunCampaignModal({
+  gymId,
   triggerDays,
   templates,
   onClose,
@@ -37,12 +42,16 @@ export default function RunCampaignModal({
   loading,
   initialTemplateId,
   initialChannel = "email",
+  initialTargetSegment,
+  initialIncludeCancelled,
+  recommendedTemplateId,
 }: RunCampaignModalProps) {
   const [channel, setChannel] = useState<"email" | "sms">(initialChannel);
   const [messageType, setMessageType] = useState<"template" | "custom">("template");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(initialTemplateId ?? "");
-  const [targetSegment, setTargetSegment] = useState<"low" | "medium" | "high" | "all">("all");
-  const [includeCancelled, setIncludeCancelled] = useState(false);
+  const [targetSegment, setTargetSegment] = useState<"low" | "medium" | "high" | "all">(initialTargetSegment ?? "all");
+  const [includeCancelled, setIncludeCancelled] = useState(initialIncludeCancelled ?? false);
+  const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [customSubject, setCustomSubject] = useState("");
   const [customBody, setCustomBody] = useState("");
   const [templateSubject, setTemplateSubject] = useState("");
@@ -50,6 +59,20 @@ export default function RunCampaignModal({
 
   // Filter templates by channel
   const channelTemplates = templates.filter((t) => t.channel === channel);
+
+  // Fetch audience count when params change
+  useEffect(() => {
+    const params = new URLSearchParams({
+      trigger_days: String(triggerDays),
+      channel,
+      target_segment: targetSegment,
+      include_cancelled: String(includeCancelled),
+    });
+    fetch(`/api/campaigns/preview-count?${params}`)
+      .then((r) => r.json())
+      .then((d) => setAudienceCount(d.count ?? 0))
+      .catch(() => setAudienceCount(null));
+  }, [triggerDays, channel, targetSegment, includeCancelled]);
 
   useEffect(() => {
     if (!initialTemplateId) return;
@@ -108,9 +131,22 @@ export default function RunCampaignModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="rounded-lg bg-white p-6 shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">
-            Run Campaign - {triggerDays}+ Days Inactive
-          </h3>
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">
+              Send Outreach - {triggerDays}+ Days Inactive
+            </h3>
+            {audienceCount !== null && (
+              <p className="mt-1 text-sm text-gray-600">
+                ~{audienceCount} member{audienceCount !== 1 ? "s" : ""} match{audienceCount === 1 ? "es" : ""}
+                {audienceCount === 0 && " — no members match this criteria"}
+              </p>
+            )}
+            {recommendedTemplateId && (
+              <p className="mt-1 text-xs text-lime-700">
+                ✓ Use your best-performing template for higher re-engagement
+              </p>
+            )}
+          </div>
           <button
             onClick={onClose}
             disabled={loading}
@@ -172,7 +208,7 @@ export default function RunCampaignModal({
             <select
               value={targetSegment}
               onChange={(e) => setTargetSegment(e.target.value as "low" | "medium" | "high" | "all")}
-              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               disabled={loading}
             >
               <option value="all">All risk levels</option>
@@ -189,7 +225,7 @@ export default function RunCampaignModal({
               id="runIncludeCancelled"
               checked={includeCancelled}
               onChange={(e) => setIncludeCancelled(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-gray-300 text-lime-600 focus:ring-lime-500"
               disabled={loading}
             />
             <label htmlFor="runIncludeCancelled" className="text-sm font-medium text-gray-700">
@@ -212,7 +248,7 @@ export default function RunCampaignModal({
                 setCustomSubject("");
                 setCustomBody("");
               }}
-              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               disabled={loading}
             >
               <option value="template">Use Template</option>
@@ -230,7 +266,7 @@ export default function RunCampaignModal({
                 id="template"
                 value={selectedTemplateId}
                 onChange={(e) => handleTemplateChange(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 required={messageType === "template"}
                 disabled={loading}
               >
@@ -238,6 +274,7 @@ export default function RunCampaignModal({
                 {channelTemplates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
+                    {recommendedTemplateId === template.id ? " — Best performer" : ""}
                   </option>
                 ))}
               </select>
@@ -252,7 +289,7 @@ export default function RunCampaignModal({
                       id="templateSubject"
                       value={templateSubject}
                       onChange={(e) => setTemplateSubject(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                       required={messageType === "template"}
                       placeholder={channel === "sms" ? "SMS preview text..." : "Email subject..."}
                       disabled={loading}
@@ -267,7 +304,7 @@ export default function RunCampaignModal({
                       value={templateBody}
                       onChange={(e) => setTemplateBody(e.target.value)}
                       rows={channel === "sms" ? 4 : 8}
-                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                       required={messageType === "template"}
                       placeholder={channel === "sms" ? "SMS message (max 160 characters recommended)..." : "Email message body...\n\nYou can use variables: {{first_name}}, {{gym_name}}, {{last_visit_date}}"}
                       disabled={loading}
@@ -295,7 +332,7 @@ export default function RunCampaignModal({
                   id="customSubject"
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   required={messageType === "custom"}
                   placeholder={channel === "sms" ? "SMS preview text..." : "Email subject..."}
                   disabled={loading}
@@ -310,7 +347,7 @@ export default function RunCampaignModal({
                   value={customBody}
                   onChange={(e) => setCustomBody(e.target.value)}
                   rows={channel === "sms" ? 4 : 8}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                   required={messageType === "custom"}
                   placeholder={channel === "sms" ? "SMS message (max 160 characters recommended)..." : "Email message body...\n\nYou can use variables: {{first_name}}, {{gym_name}}, {{last_visit_date}}"}
                   disabled={loading}
@@ -328,10 +365,10 @@ export default function RunCampaignModal({
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={loading}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={loading || audienceCount === 0}
+              className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
             >
-              {loading ? "Running Campaign..." : `Run ${triggerDays} Days Campaign`}
+              {loading ? "Sending..." : audienceCount === 0 ? "No members match" : `Send ${triggerDays} Days Outreach`}
             </button>
             <button
               type="button"

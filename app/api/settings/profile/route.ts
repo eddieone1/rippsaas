@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/auth/guards";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "@/lib/api/response";
 
 export async function POST(request: Request) {
   return handleProfileUpdate(request);
@@ -11,14 +16,8 @@ export async function PUT(request: Request) {
 
 async function handleProfileUpdate(request: Request) {
   try {
+    const { userProfile, gymId } = await requireApiAuth();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const {
       gymName,
@@ -36,34 +35,22 @@ async function handleProfileUpdate(request: Request) {
       sender_name,
       sender_email,
       sms_from_number,
+      resend_api_key,
+      twilio_account_sid,
+      twilio_auth_token,
+      mindbody_api_key,
+      mindbody_site_id,
+      mindbody_access_token,
+      glofox_access_token,
+      glofox_base_url,
     } = await request.json();
 
     // gymName and fullName are optional for branding updates
     if (gymName !== undefined && !gymName) {
-      return NextResponse.json(
-        { error: "Gym name cannot be empty" },
-        { status: 400 }
-      );
+      return errorResponse("Gym name cannot be empty", 400);
     }
     if (fullName !== undefined && !fullName) {
-      return NextResponse.json(
-        { error: "Full name cannot be empty" },
-        { status: 400 }
-      );
-    }
-
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
+      return errorResponse("Full name cannot be empty", 400);
     }
 
     // Update gym with address, branding, and sender identity
@@ -82,6 +69,14 @@ async function handleProfileUpdate(request: Request) {
       sender_name?: string | null;
       sender_email?: string | null;
       sms_from_number?: string | null;
+      resend_api_key?: string | null;
+      twilio_account_sid?: string | null;
+      twilio_auth_token?: string | null;
+      mindbody_api_key?: string | null;
+      mindbody_site_id?: string | null;
+      mindbody_access_token?: string | null;
+      glofox_access_token?: string | null;
+      glofox_base_url?: string | null;
     } = {};
 
     // Only update fields that are provided
@@ -99,17 +94,22 @@ async function handleProfileUpdate(request: Request) {
     if (sender_name !== undefined) gymUpdate.sender_name = sender_name || null;
     if (sender_email !== undefined) gymUpdate.sender_email = sender_email || null;
     if (sms_from_number !== undefined) gymUpdate.sms_from_number = sms_from_number || null;
+    if (resend_api_key !== undefined) gymUpdate.resend_api_key = resend_api_key?.trim() || null;
+    if (twilio_account_sid !== undefined) gymUpdate.twilio_account_sid = twilio_account_sid?.trim() || null;
+    if (twilio_auth_token !== undefined) gymUpdate.twilio_auth_token = twilio_auth_token?.trim() || null;
+    if (mindbody_api_key !== undefined) gymUpdate.mindbody_api_key = mindbody_api_key?.trim() || null;
+    if (mindbody_site_id !== undefined) gymUpdate.mindbody_site_id = mindbody_site_id?.trim() || null;
+    if (mindbody_access_token !== undefined) gymUpdate.mindbody_access_token = mindbody_access_token?.trim() || null;
+    if (glofox_access_token !== undefined) gymUpdate.glofox_access_token = glofox_access_token?.trim() || null;
+    if (glofox_base_url !== undefined) gymUpdate.glofox_base_url = glofox_base_url?.trim() || null;
 
     const { error: gymError } = await supabase
       .from("gyms")
       .update(gymUpdate)
-      .eq("id", userProfile.gym_id);
+      .eq("id", gymId);
 
     if (gymError) {
-      return NextResponse.json(
-        { error: `Failed to update gym: ${gymError.message}` },
-        { status: 500 }
-      );
+      return errorResponse(`Failed to update gym: ${gymError.message}`, 500);
     }
 
     // Update user profile only if fullName is provided
@@ -117,22 +117,18 @@ async function handleProfileUpdate(request: Request) {
       const { error: userError } = await supabase
         .from("users")
         .update({ full_name: fullName })
-        .eq("id", user.id);
+        .eq("id", userProfile.id);
 
       if (userError) {
-        return NextResponse.json(
-          { error: `Failed to update user profile: ${userError.message}` },
-          { status: 500 }
+        return errorResponse(
+          `Failed to update user profile: ${userError.message}`,
+          500
         );
       }
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error("Profile update error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Profile update error");
   }
 }

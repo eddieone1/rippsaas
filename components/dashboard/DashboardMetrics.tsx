@@ -71,17 +71,35 @@ export default function DashboardMetrics({
     );
   }
 
+  const snap = data.lastSnapshot;
+  const getTrend = (
+    current: number,
+    previous: number,
+    lowerIsBetter: boolean
+  ): { pct: number; positive: boolean } | null => {
+    if (!snap || previous === 0) return null;
+    const pct = Math.round(((current - previous) / previous) * 100);
+    if (pct === 0) return null;
+    const positive = lowerIsBetter ? current < previous : current > previous;
+    return { pct: Math.abs(pct), positive };
+  };
+
+  const atRiskTrend = snap ? getTrend(data.atRiskCount, snap.atRiskCount, true) : null;
+  const scoreTrend = snap ? getTrend(data.avgCommitmentScore, snap.avgCommitmentScore, false) : null;
+  const revenueAtRiskTrend = snap ? getTrend(data.revenueAtRisk, snap.revenueAtRisk, true) : null;
+  const revenueSavedTrend = snap ? getTrend(data.revenueSaved, snap.revenueSaved, false) : null;
+
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" data-tour="stats-cards">
       {/* Members at Risk */}
       <MetricCard
         title="Members at Risk"
-        value={data.atRiskCount}
+        value={data.totalMemberCount != null ? `${data.atRiskCount} of ${data.totalMemberCount}` : data.atRiskCount}
         subtitle="Need attention"
         icon="⚠️"
         variant={data.atRiskCount > 0 ? "warning" : "default"}
-        trend={null}
-        tooltip="Members flagged with low commitment or long gaps since their last visit. Use the list below to prioritise outreach and prevent churn."
+        trend={atRiskTrend}
+        tooltip="Members flagged with low commitment or long gaps. Change since last login."
       />
 
       {/* Average Commitment Score */}
@@ -91,7 +109,7 @@ export default function DashboardMetrics({
         subtitle={`/100 ${getCommitmentLabel(data.avgCommitmentScore)}`}
         icon="📊"
         variant={data.avgCommitmentScore < 50 ? "warning" : "default"}
-        trend={null}
+        trend={scoreTrend}
         tooltip="Average of all members’ commitment scores (0–100). Higher means stronger engagement; below 50 suggests more members need attention."
       />
 
@@ -102,8 +120,8 @@ export default function DashboardMetrics({
         subtitle="Monthly"
         icon="💰"
         variant={data.revenueAtRisk > 500 ? "danger" : data.revenueAtRisk > 200 ? "warning" : "default"}
-        trend={null}
-        tooltip="Estimated monthly revenue from members currently at risk. This is what you could lose if they churn without intervention."
+        trend={revenueAtRiskTrend}
+        tooltip="Monthly revenue from at-risk members. Change since last login."
       />
 
       {/* Revenue Saved */}
@@ -113,9 +131,48 @@ export default function DashboardMetrics({
         subtitle="Last 90 days"
         icon="✅"
         variant="success"
-        trend={null}
-        tooltip="Revenue retained from members who reengaged after campaigns or coach actions in the last 90 days. See ROI for full breakdown."
+        trend={revenueSavedTrend}
+        tooltip="Revenue retained from members who made another visit after campaigns or coach actions in the last 90 days. See Insights > Retention Impact for full breakdown."
       />
+
+      {/* Plays this month */}
+      {data.campaignsSentThisMonth != null && (
+        <MetricCard
+          title="Plays This Month"
+          value={data.campaignsSentThisMonth}
+          subtitle="Campaigns sent"
+          icon="📤"
+          variant="default"
+          trend={null}
+          tooltip="Number of campaign sends this calendar month."
+        />
+      )}
+
+      {/* Monthly churn */}
+      {data.monthlyChurnPct != null && (
+        <MetricCard
+          title="Monthly Churn"
+          value={`${data.monthlyChurnPct}%`}
+          subtitle="Cancelled / total"
+          icon="📉"
+          variant={data.monthlyChurnPct >= 5 ? "danger" : data.monthlyChurnPct >= 3 ? "warning" : "default"}
+          trend={null}
+          tooltip="Percentage of members who cancelled. Red when ≥5%, yellow when ≥3%."
+        />
+      )}
+
+      {/* Re-engagement rate */}
+      {data.reengagementRate != null && (
+        <MetricCard
+          title="Re-engagement Rate"
+          value={`${data.reengagementRate}%`}
+          subtitle="Last 90 days"
+          icon="🔄"
+          variant="default"
+          trend={null}
+          tooltip="Members who returned after outreach in the last 90 days."
+        />
+      )}
     </div>
   );
 }
@@ -133,7 +190,7 @@ interface MetricCardProps {
   subtitle: string;
   icon: string;
   variant: "default" | "warning" | "danger" | "success";
-  trend: number | null;
+  trend: { pct: number; positive: boolean } | null;
   tooltip?: string;
 }
 
@@ -143,6 +200,7 @@ function MetricCard({
   subtitle,
   icon,
   variant,
+  trend,
   tooltip,
 }: MetricCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -178,9 +236,26 @@ function MetricCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
-          <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+          <p className="text-sm font-medium text-gray-700">{title}</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-gray-900">{value}</p>
+            {trend && (
+              <span
+                className={`inline-flex items-center text-sm font-medium ${
+                  trend.positive ? "text-green-600" : "text-red-600"
+                }`}
+                title="Since last login"
+              >
+                {trend.positive ? (
+                  <span aria-hidden>↗</span>
+                ) : (
+                  <span aria-hidden>↘</span>
+                )}
+                {trend.pct}%
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-700">{subtitle}</p>
         </div>
         <div className="text-3xl">{icon}</div>
       </div>

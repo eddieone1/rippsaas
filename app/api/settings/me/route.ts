@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 
 export async function GET() {
   try {
@@ -9,7 +10,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     const { data: profile } = await supabase
@@ -24,11 +25,7 @@ export async function GET() {
       phone: profile?.phone ?? "",
     });
   } catch (error) {
-    console.error("Get me error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Get me error");
   }
 }
 
@@ -40,7 +37,7 @@ export async function PUT(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     const body = await request.json();
@@ -56,10 +53,7 @@ export async function PUT(request: Request) {
         .eq("id", user.id);
 
       if (userError) {
-        return NextResponse.json(
-          { error: `Failed to update profile: ${userError.message}` },
-          { status: 500 }
-        );
+        return errorResponse(`Failed to update profile: ${userError.message}`, 500);
       }
     }
 
@@ -68,10 +62,7 @@ export async function PUT(request: Request) {
         email: email.trim(),
       });
       if (authError) {
-        return NextResponse.json(
-          { error: authError.message || "Failed to update email" },
-          { status: 400 }
-        );
+        return errorResponse(authError.message || "Failed to update email", 400);
       }
       await supabase
         .from("users")
@@ -79,12 +70,8 @@ export async function PUT(request: Request) {
         .eq("id", user.id);
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error("Update me error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Update me error");
   }
 }

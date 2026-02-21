@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { differenceInDays, parseISO } from "date-fns";
+import RunPlayOnMembersModal from "./RunPlayOnMembersModal";
+import AssignCoachModal from "./AssignCoachModal";
 
 interface AtRiskMember {
   id: string;
@@ -15,6 +17,7 @@ interface AtRiskMember {
   churn_risk_score: number;
   churn_risk_level: string;
   commitment_score: number | null;
+  last_contacted_at: string | null;
   coach: {
     id: string;
     name: string;
@@ -30,32 +33,43 @@ interface AtRiskMembersResponse {
   totalPages: number;
 }
 
+interface AtRiskMembersTableProps {
+  gymId?: string;
+}
+
 /**
  * Reusable At-Risk Members Table Component
  * 
  * Features:
- * - Sortable columns (commitment score, risk score, last visit, name)
- * - Filterable by risk level
- * - Shows assigned coach
+ * - Bulk selection + Run play / Assign coach
+ * - Sortable columns (commitment score, risk score, last visit, last contacted, name)
+ * - Filterable by risk level and coach assignment
+ * - Run play per row
  * - Pagination
- * - Performance optimized
  */
-export default function AtRiskMembersTable() {
+export default function AtRiskMembersTable({ gymId }: AtRiskMembersTableProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const isEmbedded = pathname === "/members";
   
   const [data, setData] = useState<AtRiskMembersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showRunModal, setShowRunModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   
   // URL state
   const riskLevel = searchParams.get('riskLevel') || 'all';
+  const assigned = searchParams.get('assigned') || 'all';
   const sortBy = searchParams.get('sortBy') || 'commitment_score';
   const sortOrder = searchParams.get('sortOrder') || 'asc';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
   const updateURL = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
+    if (isEmbedded) params.set("tab", "at-risk");
     Object.entries(updates).forEach(([key, value]) => {
       if (value === 'all' || value === '') {
         params.delete(key);
@@ -63,13 +77,41 @@ export default function AtRiskMembersTable() {
         params.set(key, value);
       }
     });
-    params.delete('page'); // Reset to page 1 when filtering/sorting
-    router.push(`/members/at-risk?${params.toString()}`);
+    if (!("page" in updates)) params.delete("page");
+    const base = isEmbedded ? "/members" : "/members/at-risk";
+    router.push(`${base}?${params.toString()}`);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!data?.members) return;
+    if (selectedIds.size === data.members.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.members.map((m) => m.id)));
+    }
+  };
+
+  const getDaysSinceContact = (lastContactedAt: string | null): number | null => {
+    if (!lastContactedAt) return null;
+    try {
+      return differenceInDays(new Date(), parseISO(lastContactedAt));
+    } catch {
+      return null;
+    }
   };
 
   useEffect(() => {
     fetchMembers();
-  }, [riskLevel, sortBy, sortOrder, page]);
+  }, [riskLevel, assigned, sortBy, sortOrder, page]);
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -78,6 +120,7 @@ export default function AtRiskMembersTable() {
     try {
       const params = new URLSearchParams();
       params.append('riskLevel', riskLevel);
+      if (assigned !== 'all') params.append('assigned', assigned);
       params.append('sortBy', sortBy);
       params.append('sortOrder', sortOrder);
       params.append('page', page.toString());
@@ -115,7 +158,7 @@ export default function AtRiskMembersTable() {
       case 'medium':
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-lime-100 text-lime-800 border-lime-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -132,7 +175,7 @@ export default function AtRiskMembersTable() {
   const getCommitmentColor = (score: number | null) => {
     if (score === null) return 'text-gray-500';
     if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
+    if (score >= 60) return 'text-lime-600';
     if (score >= 40) return 'text-yellow-600';
     return 'text-red-600';
   };
@@ -179,34 +222,114 @@ export default function AtRiskMembersTable() {
       <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
         <div className="text-4xl mb-4">✅</div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          No at-risk members
+          No one needs attention
         </h3>
-        <p className="text-sm text-gray-600">
-          All your active members are showing healthy engagement patterns.
+        <p className="text-sm text-gray-600 mb-4">
+          Well done – all your active members are showing healthy engagement patterns.
         </p>
+        <Link href="/plays" className="text-sm font-medium text-lime-600 hover:text-lime-800">
+          Run a play →
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <label className="text-sm font-medium text-gray-700">Filter by risk:</label>
-        <div className="flex gap-2">
-          {['all', 'high', 'medium', 'low'].map((level) => (
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && gymId && (
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg border border-lime-300 bg-lime-50 px-4 py-3">
+          <span className="text-sm font-medium text-gray-900">
+            {selectedIds.size} member{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex items-center gap-2">
             <button
-              key={level}
-              onClick={() => handleRiskFilter(level)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                riskLevel === level
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              type="button"
+              onClick={() => setShowRunModal(true)}
+              className="rounded-md bg-lime-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-lime-700"
             >
-              {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
+              Run play
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setShowAssignModal(true)}
+              className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Assign coach
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showRunModal && gymId && (
+        <RunPlayOnMembersModal
+          gymId={gymId}
+          memberIds={Array.from(selectedIds)}
+          memberCount={selectedIds.size}
+          onClose={() => setShowRunModal(false)}
+          onSuccess={() => {
+            setSelectedIds(new Set());
+            fetchMembers();
+          }}
+        />
+      )}
+
+      {showAssignModal && (
+        <AssignCoachModal
+          memberIds={Array.from(selectedIds)}
+          memberCount={selectedIds.size}
+          onClose={() => setShowAssignModal(false)}
+          onSuccess={() => {
+            setSelectedIds(new Set());
+            fetchMembers();
+          }}
+        />
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Risk:</label>
+          <div className="flex gap-1">
+            {['all', 'high', 'medium', 'low'].map((level) => (
+              <button
+                key={level}
+                onClick={() => handleRiskFilter(level)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  riskLevel === level
+                    ? 'bg-lime-500 text-gray-900'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Coach:</label>
+          <div className="flex gap-1">
+            {(['all', 'unassigned', 'assigned'] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => updateURL({ assigned: a })}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  assigned === a
+                    ? 'bg-lime-500 text-gray-900'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {a === 'all' ? 'All' : a === 'unassigned' ? 'Unassigned' : 'Assigned'}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="ml-auto text-sm text-gray-600">
           {data.total} member{data.total !== 1 ? 's' : ''} found
@@ -219,6 +342,16 @@ export default function AtRiskMembersTable() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {gymId && (
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={data.members.length > 0 && selectedIds.size === data.members.length}
+                      onChange={toggleSelectAll}
+                      className="rounded border-gray-300"
+                    />
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700">
                   <button
                     onClick={() => handleSort('name')}
@@ -256,6 +389,9 @@ export default function AtRiskMembersTable() {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700">
+                  Last Contacted
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700">
                   Assigned Coach
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700">
@@ -266,6 +402,7 @@ export default function AtRiskMembersTable() {
             <tbody className="divide-y divide-gray-200 bg-white">
               {data.members.map((member) => {
                 const daysInactive = getDaysInactive(member.last_visit_date);
+                const daysSinceContact = getDaysSinceContact(member.last_contacted_at ?? null);
                 return (
                   <tr
                     key={member.id}
@@ -273,6 +410,16 @@ export default function AtRiskMembersTable() {
                       member.churn_risk_level === 'high' ? 'bg-red-50/30' : ''
                     }`}
                   >
+                    {gymId && (
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(member.id)}
+                          onChange={() => toggleSelect(member.id)}
+                          className="rounded border-gray-300"
+                        />
+                      </td>
+                    )}
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
                         {member.first_name} {member.last_name}
@@ -316,6 +463,13 @@ export default function AtRiskMembersTable() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      {daysSinceContact !== null ? (
+                        <span>{daysSinceContact} day{daysSinceContact !== 1 ? "s" : ""} ago</span>
+                      ) : (
+                        <span className="text-amber-600 font-medium">Never</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       {member.coach ? (
                         <div>
                           <div className="font-medium">{member.coach.name}</div>
@@ -326,12 +480,26 @@ export default function AtRiskMembersTable() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <Link
-                        href={`/members/${member.id}`}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        View →
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        {gymId && (member.email || member.phone) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedIds(new Set([member.id]));
+                              setShowRunModal(true);
+                            }}
+                            className="rounded-md bg-lime-500 px-2.5 py-1 text-xs font-medium text-gray-900 hover:bg-lime-400"
+                          >
+                            Run play
+                          </button>
+                        )}
+                        <Link
+                          href={`/members/${member.id}?from=at-risk`}
+                          className="text-lime-600 hover:text-lime-900"
+                        >
+                          View →
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

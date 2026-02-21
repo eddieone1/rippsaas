@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getGymContext } from "@/lib/supabase/get-gym-context";
-import MembersListSimplified from "@/components/members/MembersListSimplified";
+import MembersPageClient from "@/components/members/MembersPageClient";
 
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: { status?: string; risk?: string; search?: string };
+  searchParams: Promise<{ tab?: string; status?: string; risk?: string; search?: string; birthdays?: string; page?: string }> | { tab?: string; status?: string; risk?: string; search?: string; birthdays?: string; page?: string };
 }) {
   const { gymId, userProfile } = await getGymContext();
 
@@ -18,32 +18,47 @@ export default async function MembersPage({
     redirect("/onboarding/gym-info");
   }
 
-  const statusFilter = searchParams.status || "all"; // all, active, inactive
-  const riskFilter = searchParams.risk || "all"; // all, high, medium, low, none
-  const searchQuery = searchParams.search || "";
+  const resolved = await Promise.resolve(searchParams);
+  const tab = resolved.tab || "at-risk";
+  const statusFilter = resolved.status || "all";
+  const riskFilter = resolved.risk || "all";
+  const searchQuery = resolved.search || "";
+  const birthdaysFilter = resolved.birthdays || "";
+  const page = resolved.page || "1";
 
   return (
     <div>
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">All Members</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Members</h1>
           <p className="mt-2 text-sm text-gray-600">
-            View and manage your members
+            View and manage your members. Use Need attention to focus on those who need outreach.
           </p>
         </div>
-        <Link
-          href="/members/upload"
-          className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Upload / update member data
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/plays"
+            className="inline-flex items-center justify-center rounded-md bg-lime-600 px-4 py-2 text-sm font-medium text-white hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2"
+          >
+            Run a play
+          </Link>
+          <Link
+            href="/members/upload"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2"
+          >
+            Upload / update member data
+          </Link>
+        </div>
       </div>
 
-      <MembersListSimplified
+      <MembersPageClient
         gymId={gymId}
-        statusFilter={statusFilter}
-        riskFilter={riskFilter}
-        searchQuery={searchQuery}
+        initialTab={tab}
+        initialStatus={statusFilter}
+        initialRisk={riskFilter}
+        initialSearch={searchQuery}
+        initialBirthdays={birthdaysFilter}
+        initialPage={page}
       />
     </div>
   );

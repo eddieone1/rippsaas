@@ -90,20 +90,25 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
   };
 
   if (!showForm) {
-    return (
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <p className="mb-2 text-xs text-gray-500">
+        Create campaign = save for later or reuse. Use quick sends above to send immediately.
+      </p>
       <button
         onClick={() => setShowForm(true)}
-        className="mb-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-500"
       >
-        + Create New Campaign
+        + Create campaign (save for later)
       </button>
-    );
+    </div>
+  );
   }
 
   return (
-    <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
+    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-md">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-gray-900">Create New Campaign</h2>
+        <h2 className="text-lg font-medium text-gray-900">Create One-off Send</h2>
         <button
           onClick={() => setShowForm(false)}
           className="text-gray-400 hover:text-gray-600"
@@ -129,9 +134,9 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
             id="campaignName"
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             required
-            placeholder="e.g., 14 Days Inactive Email Campaign"
+            placeholder="e.g., 14 Days Inactive Email Send"
           />
         </div>
 
@@ -177,7 +182,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
             value={triggerDays}
             onChange={(e) => setTriggerDays(parseInt(e.target.value) || 14)}
             min="1"
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             required
           />
         </div>
@@ -191,7 +196,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
             id="targetSegment"
             value={targetSegment}
             onChange={(e) => setTargetSegment(e.target.value as "low" | "medium" | "high" | "all")}
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
           >
             <option value="all">All risk levels</option>
             <option value="low">Low risk members</option>
@@ -207,7 +212,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
             id="includeCancelled"
             checked={includeCancelled}
             onChange={(e) => setIncludeCancelled(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-gray-300 text-lime-600 focus:ring-lime-500"
           />
           <label htmlFor="includeCancelled" className="text-sm font-medium text-gray-700">
             Include cancelled members
@@ -222,7 +227,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
           <select
             value={messageType}
             onChange={(e) => setMessageType(e.target.value as "template" | "custom")}
-            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
           >
             <option value="template">Use Template</option>
             <option value="custom">Custom Message</option>
@@ -239,7 +244,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
               id="template"
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               required={messageType === "template"}
             >
               <option value="">Select a template...</option>
@@ -278,7 +283,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
                 id="customSubject"
                 value={customSubject}
                 onChange={(e) => setCustomSubject(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 required={messageType === "custom"}
                 placeholder={channel === "sms" ? "SMS preview text..." : "Email subject..."}
               />
@@ -292,7 +297,7 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
                 value={customBody}
                 onChange={(e) => setCustomBody(e.target.value)}
                 rows={channel === "sms" ? 4 : 8}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
                 required={messageType === "custom"}
                 placeholder={channel === "sms" ? "SMS message (max 160 characters recommended)..." : "Email message body...\n\nYou can use variables: {{first_name}}, {{gym_name}}, {{last_visit_date}}"}
               />
@@ -310,9 +315,9 @@ export default function CreateCampaignForm({ templates, gymId }: CreateCampaignF
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Campaign"}
+            {loading ? "Creating..." : "Create & Send"}
           </button>
           <button
             type="button"

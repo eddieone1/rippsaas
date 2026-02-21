@@ -1,23 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-interface Member {
+export interface MemberActionsMember {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string | null;
 }
 
-export default function MemberActions({ member }: { member: Member }) {
-  const router = useRouter();
+interface MemberActionsProps {
+  member: MemberActionsMember;
+  onActionComplete?: () => void;
+}
+
+export default function MemberActions({ member, onActionComplete }: MemberActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showDateInput, setShowDateInput] = useState(false);
+  const [visitDate, setVisitDate] = useState("");
 
-  const handleAction = async (action: string, data?: any) => {
+  const handleAction = async (action: string, data?: Record<string, unknown>) => {
     setError(null);
     setSuccess(null);
     setLoading(action);
@@ -39,19 +44,17 @@ export default function MemberActions({ member }: { member: Member }) {
         return;
       }
 
-      // Show success message
       if (action === "send-email") {
         setSuccess("Email sent successfully!");
         setShowEmailModal(false);
-      } else if (action === "mark-re-engaged") {
-        setSuccess("Member marked as re-engaged!");
       } else if (action === "update-last-visit") {
         setSuccess("Last visit date updated!");
+        setShowDateInput(false);
+        setVisitDate("");
       }
 
-      // Refresh the page after a short delay to show success message
       setTimeout(() => {
-        router.refresh();
+        onActionComplete?.();
         setLoading(null);
         setSuccess(null);
       }, 1500);
@@ -66,18 +69,16 @@ export default function MemberActions({ member }: { member: Member }) {
     handleAction("send-email", { email_type: emailType });
   };
 
-  const handleMarkReEngaged = () => handleAction("mark-re-engaged");
   const handleUpdateLastVisit = () => {
-    const date = prompt("Enter last visit date (YYYY-MM-DD):");
-    if (date) {
-      handleAction("update-last-visit", { last_visit_date: date });
+    if (visitDate) {
+      handleAction("update-last-visit", { last_visit_date: visitDate });
     }
   };
 
   return (
     <>
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Actions</h3>
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         {success && (
           <div className="mb-4 rounded-md bg-green-50 p-3">
             <p className="text-sm text-green-800">{success}</p>
@@ -92,43 +93,61 @@ export default function MemberActions({ member }: { member: Member }) {
           <button
             onClick={() => setShowEmailModal(true)}
             disabled={!member.email || loading !== null}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Send Engagement Email
           </button>
-          <button
-            onClick={handleMarkReEngaged}
-            disabled={loading !== null}
-            className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading === "mark-re-engaged" ? "Updating..." : "Mark as Re-engaged"}
-          </button>
-          <button
-            onClick={handleUpdateLastVisit}
-            disabled={loading !== null}
-            className="w-full rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading === "update-last-visit" ? "Updating..." : "Update Last Visit"}
-          </button>
+          {!showDateInput ? (
+            <button
+              onClick={() => setShowDateInput(true)}
+              disabled={loading !== null}
+              className="w-full rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Update Last Visit
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={visitDate}
+                onChange={(e) => setVisitDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
+              <button
+                onClick={handleUpdateLastVisit}
+                disabled={!visitDate || loading !== null}
+                className="rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading === "update-last-visit" ? "..." : "Save"}
+              </button>
+              <button
+                onClick={() => { setShowDateInput(false); setVisitDate(""); }}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Email Type Selection Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="rounded-lg bg-white p-6 shadow-xl max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEmailModal(false)} aria-hidden />
+          <div className="relative rounded-lg bg-white p-6 shadow-xl max-w-md w-full">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Select Email Type</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Choose the type of engagement email you'd like to send to {member.first_name}:
+              Choose the type of engagement email to send to {member.firstName}:
             </p>
             <div className="space-y-3">
               <button
                 onClick={() => handleSendEmail("we_miss_you")}
                 disabled={loading === "send-email"}
-                className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="w-full rounded-md bg-lime-500 px-4 py-3 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
-                <div className="font-semibold">We Haven't Seen You in a While</div>
-                <div className="text-xs text-blue-100 mt-1">
+                <div className="font-semibold">We Haven&apos;t Seen You in a While</div>
+                <div className="text-xs text-gray-600 mt-1">
                   Friendly message to encourage them to return
                 </div>
               </button>

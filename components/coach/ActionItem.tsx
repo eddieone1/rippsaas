@@ -109,7 +109,7 @@ export default function ActionItem({ action, onComplete }: ActionItemProps) {
           {/* Member Link */}
           <Link
             href={`/members/${action.memberId}`}
-            className="text-sm font-medium text-blue-600 hover:text-blue-900"
+            className="text-sm font-medium text-lime-600 hover:text-lime-900"
           >
             View {action.memberName} →
           </Link>
@@ -121,7 +121,7 @@ export default function ActionItem({ action, onComplete }: ActionItemProps) {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes (optional)..."
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
                 rows={2}
               />
             </div>

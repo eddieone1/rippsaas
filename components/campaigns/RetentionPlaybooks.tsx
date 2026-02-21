@@ -107,7 +107,7 @@ export default async function RetentionPlaybooks({ gymId }: { gymId: string }) {
                       {campaign.name}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600">
-                      <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800">
+                      <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold bg-lime-100 text-lime-800">
                         {campaign.channel?.toUpperCase() || "EMAIL"}
                       </span>
                     </td>

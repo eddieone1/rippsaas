@@ -72,7 +72,7 @@ export default async function MembersAtRiskTable({ gymId }: { gymId: string }) {
           </div>
           <Link
             href="/members/at-risk"
-            className="text-sm font-medium text-blue-600 hover:text-blue-900"
+            className="text-sm font-medium text-lime-600 hover:text-lime-800"
           >
             View all →
           </Link>
@@ -128,8 +128,8 @@ export default async function MembersAtRiskTable({ gymId }: { gymId: string }) {
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-medium">
                     <Link
-                      href={`/members/${member.id}`}
-                      className="text-blue-600 hover:text-blue-900"
+                      href={`/members/${member.id}?from=dashboard`}
+                      className="text-lime-600 hover:text-lime-800"
                     >
                       View Details →
                     </Link>

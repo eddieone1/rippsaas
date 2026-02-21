@@ -74,22 +74,16 @@ export default function SignupForm() {
       });
 
       if (signInError) {
-        // Check if the error is related to email verification
-        if (
-          signInError.message.includes("Email not confirmed") ||
-          signInError.message.includes("email") && signInError.message.includes("confirm")
-        ) {
-          setEmailVerificationSent(true);
-          setError(null);
-        } else {
-          setError("Account created but failed to sign in. Please try logging in.");
-        }
+        // Account was created successfully, but sign-in failed (likely email verification required)
+        // Always show email verification message since account creation succeeded
+        setEmailVerificationSent(true);
+        setError(null);
         setLoading(false);
         return;
       }
 
-      // Redirect to onboarding to update gym profile
-      router.push("/onboarding/gym-info");
+      // Redirect to onboarding welcome
+      router.push("/onboarding/welcome");
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
@@ -103,9 +97,9 @@ export default function SignupForm() {
         Already have an invite?{" "}
         <a
           href="/join"
-          className="font-medium text-blue-600 hover:text-blue-500"
+          className="font-medium text-lime-600 hover:text-lime-500"
         >
-          Join organization
+          Join organisation
         </a>
       </div>
       {emailVerificationSent && (
@@ -133,7 +127,7 @@ export default function SignupForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="you@example.com"
           />
         </div>
@@ -149,7 +143,7 @@ export default function SignupForm() {
             required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="John Doe"
           />
         </div>
@@ -166,7 +160,7 @@ export default function SignupForm() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="••••••••"
           />
           <p className="mt-1 text-xs text-gray-500">{PASSWORD_RULES_TEXT}</p>
@@ -183,7 +177,7 @@ export default function SignupForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="••••••••"
           />
         </div>
@@ -195,9 +189,9 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setClientCount("0-50")}
-              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 ${
                 clientCount === "0-50"
-                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                  ? "border-lime-600 bg-lime-50 text-lime-900"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -206,9 +200,9 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setClientCount("51-150")}
-              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 ${
                 clientCount === "51-150"
-                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                  ? "border-lime-600 bg-lime-50 text-lime-900"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -217,9 +211,9 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setClientCount("151-500")}
-              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 ${
                 clientCount === "151-500"
-                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                  ? "border-lime-600 bg-lime-50 text-lime-900"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -228,9 +222,9 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setClientCount("501+")}
-              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`rounded-md border-2 px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 ${
                 clientCount === "501+"
-                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                  ? "border-lime-600 bg-lime-50 text-lime-900"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -247,7 +241,7 @@ export default function SignupForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Creating account..." : "Create account"}
         </button>

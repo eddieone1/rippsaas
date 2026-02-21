@@ -11,7 +11,7 @@ interface Gym {
   brand_secondary_color?: string | null;
 }
 
-export default function BrandingSection({ gym }: { gym: Gym | null }) {
+export default function BrandingSection({ gym, onSuccess }: { gym: Gym | null; onSuccess?: (msg: string) => void }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -86,6 +86,7 @@ export default function BrandingSection({ gym }: { gym: Gym | null }) {
         return;
       }
       setSuccess("Branding saved. Theme is applied across the CRM.");
+      onSuccess?.("Branding saved");
       router.refresh();
     } catch {
       setError("Failed to save");
@@ -96,7 +97,10 @@ export default function BrandingSection({ gym }: { gym: Gym | null }) {
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Business branding</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">Business branding</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Logo and colours appear in outreach emails and the dashboard.
+      </p>
 
       {error && (
         <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
@@ -134,7 +138,7 @@ export default function BrandingSection({ gym }: { gym: Gym | null }) {
                 type="button"
                 onClick={handleLogoUpload}
                 disabled={uploadingLogo}
-                className="ml-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="ml-2 rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
               >
                 {uploadingLogo ? "Uploading…" : "Upload"}
               </button>
@@ -189,7 +193,7 @@ export default function BrandingSection({ gym }: { gym: Gym | null }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
         >
           {loading ? "Saving…" : "Save branding & theme"}
         </button>

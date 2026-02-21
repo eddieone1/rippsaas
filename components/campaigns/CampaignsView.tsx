@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import CreateCampaignForm from "./CreateCampaignForm";
 import RunCampaignModal from "./RunCampaignModal";
 import CampaignDetailPanel from "./CampaignDetailPanel";
+import AutoInterventionsSection from "./AutoInterventionsSection";
+import PlaysSection from "./PlaysSection";
 
 interface Template {
   id: string;
@@ -86,7 +88,8 @@ export default function CampaignsView({
       }
       setShowRunModal(false);
       router.refresh();
-      if (data.sent != null) alert(`Campaign sent to ${data.sent} members.`);
+      const result = data.data ?? data;
+      if (result.sent != null) alert(`Campaign sent to ${result.sent} members.`);
     } catch {
       setError("An unexpected error occurred");
     } finally {
@@ -121,26 +124,32 @@ export default function CampaignsView({
           <button
             type="button"
             onClick={() => openQuickRun(14, quickWeHaventSeenYou?.id, "email")}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500"
           >
             We haven&apos;t seen you in a while
           </button>
           <button
             type="button"
             onClick={() => openQuickRun(14, quickBringAFriend?.id, "email")}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500"
           >
             Bring a friend on us
           </button>
           <button
             type="button"
             onClick={() => openQuickRun(14, quickWeMissYouDiscount?.id, "email")}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500"
           >
             We miss you (membership discount offer)
           </button>
         </div>
       </div>
+
+      {/* Automated interventions: toggle + approval queue */}
+      <AutoInterventionsSection gymId={gymId} />
+
+      {/* Intervention plays management */}
+      <PlaysSection />
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
@@ -176,13 +185,13 @@ export default function CampaignsView({
                   <tr
                     key={campaign.id}
                     onClick={() => setSelectedCampaignId(campaign.id)}
-                    className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50"
+                    className="cursor-pointer hover:bg-lime-50 focus:bg-lime-50"
                   >
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900">
                       {campaign.name}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600">
-                      <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800">
+                      <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold bg-lime-100 text-lime-800">
                         {campaign.channel?.toUpperCase() ?? "EMAIL"}
                       </span>
                     </td>
@@ -232,6 +241,7 @@ export default function CampaignsView({
 
       {showRunModal && (
         <RunCampaignModal
+          gymId={gymId}
           triggerDays={runModalConfig.triggerDays}
           templates={templates}
           onClose={() => setShowRunModal(false)}

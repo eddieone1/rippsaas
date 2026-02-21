@@ -8,6 +8,8 @@ interface MemberEditDetailsProps {
   phone: string;
   specialNotes: string;
   onSaved: () => void;
+  /** When false, only show email/phone (no notes field). Use for Notes card. */
+  includeNotes?: boolean;
 }
 
 export default function MemberEditDetails({
@@ -16,6 +18,7 @@ export default function MemberEditDetails({
   phone,
   specialNotes,
   onSaved,
+  includeNotes = true,
 }: MemberEditDetailsProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,7 +45,7 @@ export default function MemberEditDetails({
         body: JSON.stringify({
           email: formEmail.trim() || null,
           phone: formPhone.trim() || null,
-          special_notes: formNotes.trim() || null,
+          ...(includeNotes ? { special_notes: formNotes.trim() || null } : {}),
         }),
       });
       const data = await res.json();
@@ -65,7 +68,7 @@ export default function MemberEditDetails({
       <button
         type="button"
         onClick={handleOpen}
-        className="text-sm font-medium text-blue-600 hover:text-blue-800"
+        className="text-sm font-medium text-lime-600 hover:text-lime-800"
       >
         Edit details
       </button>
@@ -103,18 +106,20 @@ export default function MemberEditDetails({
                   placeholder="Phone number"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Special notes
-                </label>
-                <textarea
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  rows={3}
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                  placeholder="Notes about this member"
-                />
-              </div>
+              {includeNotes && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Special notes
+                  </label>
+                  <textarea
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                    rows={3}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="Notes about this member"
+                  />
+                </div>
+              )}
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
@@ -128,7 +133,7 @@ export default function MemberEditDetails({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded bg-lime-500 px-3 py-1.5 text-sm font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save"}
               </button>

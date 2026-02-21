@@ -14,7 +14,7 @@ export default function RoleBadge({ role }: { role: UserRole }) {
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
         isOwner
           ? "bg-purple-100 text-purple-800"
-          : "bg-blue-100 text-blue-800"
+          : "bg-lime-100 text-lime-800"
       }`}
     >
       {displayName}

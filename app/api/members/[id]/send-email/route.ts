@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/auth/guards";
+import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 import { sendEmail, replaceTemplateVariables, createBrandedEmailTemplate } from "@/lib/email/resend";
 
 export async function POST(
@@ -7,14 +8,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const { gymId } = await requireApiAuth();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Handle both sync and async params (Next.js 15 compatibility)
     const resolvedParams = await Promise.resolve(params);
@@ -24,40 +19,23 @@ export async function POST(
     const body = await request.json();
     const emailType = body.email_type || "we_miss_you"; // Default to "we_miss_you"
 
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
-    }
-
     // Get member information
     const { data: member } = await supabase
       .from("members")
       .select("*")
       .eq("id", memberId)
-      .eq("gym_id", userProfile.gym_id)
+      .eq("gym_id", gymId)
       .single();
 
     if (!member || !member.email) {
-      return NextResponse.json(
-        { error: "Member not found or has no email" },
-        { status: 404 }
-      );
+      return errorResponse("Member not found or has no email", 404);
     }
 
     // Get gym information with branding and sender identity
     const { data: gym } = await supabase
       .from("gyms")
-      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email")
-      .eq("id", userProfile.gym_id)
+      .select("name, logo_url, brand_primary_color, brand_secondary_color, sender_name, sender_email, resend_api_key")
+      .eq("id", gymId)
       .single();
 
     const gymName = gym?.name || "your gym";
@@ -144,6 +122,7 @@ The team at {{gym_name}}`,
       subject: emailSubject,
       body: emailBody,
       from: emailFrom,
+      apiKey: gym?.resend_api_key ?? undefined,
     });
 
     if (emailError) {
@@ -153,26 +132,18 @@ The team at {{gym_name}}`,
         : (emailError as unknown) instanceof Error 
         ? (emailError as Error).message 
         : String(emailError);
-      return NextResponse.json(
-        { error: `Failed to send email: ${errorMessage}` },
-        { status: 500 }
-      );
+      return errorResponse(`Failed to send email: ${errorMessage}`, 500);
     }
 
     // Note: We don't have a campaign_id for manual sends, so we'll just log it
     // In a production system, you might want to create a "manual" campaign or store this differently
     console.log(`Email sent to ${member.email} (${emailType}):`, emailId);
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       message: "Email sent successfully!",
       email_id: emailId,
     });
   } catch (error) {
-    console.error("Send email error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Send email error");
   }
 }

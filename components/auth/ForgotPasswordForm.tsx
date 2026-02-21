@@ -16,8 +16,15 @@ export default function ForgotPasswordForm() {
 
     try {
       const supabase = createClient();
+      // Use NEXT_PUBLIC_APP_URL if set, otherwise fall back to window.location.origin
+      // Ensure we use https in production
+      const baseUrl = 
+        typeof window !== 'undefined' 
+          ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin)
+          : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${baseUrl}/reset-password`,
       });
 
       if (error) {
@@ -63,7 +70,7 @@ export default function ForgotPasswordForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             placeholder="you@example.com"
           />
         </div>
@@ -73,7 +80,7 @@ export default function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Sending..." : "Send reset link"}
         </button>
@@ -82,7 +89,7 @@ export default function ForgotPasswordForm() {
       <div className="text-center">
         <Link
           href="/login"
-          className="text-sm font-medium text-blue-600 hover:text-blue-500"
+          className="text-sm font-medium text-lime-600 hover:text-lime-500"
         >
           ← Back to sign in
         </Link>

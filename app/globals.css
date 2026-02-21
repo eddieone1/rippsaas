@@ -5,8 +5,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --brand-primary: #2563EB;
-  --brand-secondary: #1E40AF;
+  --brand-primary: #84cc16;
+  --brand-secondary: #65a30d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +20,12 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Improve text contrast for accessibility */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280; /* gray-500 - sufficient contrast */
 }
 
 @layer utilities {

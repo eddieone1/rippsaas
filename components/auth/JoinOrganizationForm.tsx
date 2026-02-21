@@ -48,7 +48,7 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to join organization");
+        setError(data.error || "Failed to join organisation");
         setLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
               >
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {invite.gyms?.name || "Organization"}
+                    {invite.gyms?.name || "Organisation"}
                   </p>
                   <p className="text-xs text-gray-500">
                     Invited by {invite.users?.full_name || "Owner"} • Role: {invite.role === 'owner' ? 'Owner' : 'Coach'}
@@ -116,7 +116,7 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
                 <button
                   onClick={() => handleJoin(invite.token)}
                   disabled={loading}
-                  className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="rounded-md bg-lime-500 px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
                 >
                   Accept
                 </button>
@@ -143,7 +143,7 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
               value={inviteToken}
               onChange={(e) => setInviteToken(e.target.value)}
               placeholder="Enter invite token"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
             />
             <p className="mt-1 text-xs text-gray-500">
               You received this token in your invitation email
@@ -152,7 +152,7 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-md border border-transparent bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Joining..." : "Join Organization"}
           </button>
@@ -162,9 +162,9 @@ export default function JoinOrganizationForm({ token }: { token?: string }) {
       <div className="text-center">
         <a
           href="/signup"
-          className="text-sm text-blue-600 hover:text-blue-500"
+          className="text-sm text-lime-600 hover:text-lime-500"
         >
-          Create a new organization instead
+          Create a new organisation instead
         </a>
       </div>
     </div>

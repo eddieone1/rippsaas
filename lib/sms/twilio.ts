@@ -1,13 +1,16 @@
 /**
  * Send SMS via Twilio.
- * Set env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (E.164, e.g. +1234567890).
- * Optional: gym can override "from" with sms_from_number (E.164).
+ * Set env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (E.164).
+ * Optional: pass accountSid/authToken to use gym's Twilio account; from can override "from" number.
  */
 
 export interface SendSmsParams {
   to: string;
   body: string;
   from?: string | null;
+  /** When set, use this Twilio account instead of env credentials */
+  accountSid?: string | null;
+  authToken?: string | null;
 }
 
 export interface SendSmsResult {
@@ -15,9 +18,9 @@ export interface SendSmsResult {
   error: string | null;
 }
 
-export async function sendSms({ to, body, from }: SendSmsParams): Promise<SendSmsResult> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
+export async function sendSms({ to, body, from, accountSid: providedSid, authToken: providedToken }: SendSmsParams): Promise<SendSmsResult> {
+  const accountSid = (providedSid?.trim() || process.env.TWILIO_ACCOUNT_SID) ?? null;
+  const authToken = (providedToken?.trim() || process.env.TWILIO_AUTH_TOKEN) ?? null;
   const defaultFrom = process.env.TWILIO_PHONE_NUMBER;
   const fromNumber = (from?.trim() || defaultFrom?.trim()) ?? null;
 

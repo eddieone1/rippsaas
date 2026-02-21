@@ -27,12 +27,12 @@ export default async function Navbar() {
     if (gym) {
       branding = {
         logo_url: gym.logo_url,
-        brand_primary_color: gym.brand_primary_color || "#2563EB",
+        brand_primary_color: gym.brand_primary_color || "#84cc16",
         brand_secondary_color: gym.brand_secondary_color || "#1E40AF",
         gym_name: gym.name,
       };
     }
   }
 
-  return <NavbarClient branding={branding} userRole={userRole} />;
+  return <NavbarClient branding={branding} userRole={userRole} gymId={gymId} />;
 }

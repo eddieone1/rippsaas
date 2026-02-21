@@ -1,20 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { requireApiAuth } from "@/lib/auth/guards";
+import {
+  successResponse,
+  errorResponse,
+  handleApiError,
+} from "@/lib/api/response";
 import { calculateChurnRisk } from "@/lib/churn-risk";
+import { calculateCommitmentScore } from "@/lib/commitment-score";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const { gymId } = await requireApiAuth();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Handle both sync and async params (Next.js 15 compatibility)
     const resolvedParams = await Promise.resolve(params);
@@ -23,24 +23,7 @@ export async function POST(
     const { last_visit_date } = await request.json();
 
     if (!last_visit_date) {
-      return NextResponse.json(
-        { error: "last_visit_date is required" },
-        { status: 400 }
-      );
-    }
-
-    // Get user's gym_id
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("gym_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userProfile?.gym_id) {
-      return NextResponse.json(
-        { error: "Gym not found" },
-        { status: 404 }
-      );
+      return errorResponse("last_visit_date is required", 400);
     }
 
     // Get member to recalculate risk and verify it belongs to user's gym
@@ -48,36 +31,39 @@ export async function POST(
       .from("members")
       .select("*")
       .eq("id", memberId)
-      .eq("gym_id", userProfile.gym_id)
+      .eq("gym_id", gymId)
       .single();
 
     if (!member) {
-      return NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 }
-      );
+      return errorResponse("Member not found", 404);
     }
 
-    // Get visit frequency for last 30 days
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const { count: visitsLast30Days } = await supabase
+    // Get visit history for commitment score calculation
+    const { data: visitActivities } = await supabase
       .from("member_activities")
-      .select("*", { count: "exact", head: true })
+      .select("activity_date")
       .eq("member_id", memberId)
-      .gte("activity_date", thirtyDaysAgo.toISOString().split("T")[0]);
+      .eq("activity_type", "visit")
+      .order("activity_date", { ascending: false });
 
-    // Recalculate churn risk with all available factors
+    const visitDates = visitActivities?.map((a) => a.activity_date) || [];
+    if (last_visit_date && !visitDates.includes(last_visit_date)) {
+      visitDates.unshift(last_visit_date);
+    }
+
+    // Calculate commitment score
+    const commitmentResult = calculateCommitmentScore({
+      joinedDate: member.joined_date,
+      lastVisitDate: last_visit_date,
+      visitDates,
+      expectedVisitsPerWeek: 2, // Default assumption
+    });
+
+    // Recalculate churn risk based on commitment score
     const riskResult = calculateChurnRisk({
       last_visit_date,
       joined_date: member.joined_date,
-      has_received_campaign: false,
-      distance_from_gym_km: (member as any).distance_from_gym_km || null,
-      age: (member as any).age || null,
-      employment_status: (member as any).employment_status || null,
-      student_status: (member as any).student_status || null,
-      visits_last_30_days: visitsLast30Days || 0,
-      total_visits: (member as any).total_visits || null,
+      commitment_score: commitmentResult.score,
     });
 
     // Record member activity for intervention tracking
@@ -92,6 +78,8 @@ export async function POST(
       .from("members")
       .update({
         last_visit_date,
+        commitment_score: commitmentResult.score,
+        commitment_score_calculated_at: new Date().toISOString(),
         churn_risk_score: riskResult.score,
         churn_risk_level: riskResult.level,
         last_risk_calculated_at: new Date().toISOString(),
@@ -100,10 +88,7 @@ export async function POST(
       .eq("id", memberId);
 
     if (error) {
-      return NextResponse.json(
-        { error: `Failed to update member: ${error.message}` },
-        { status: 500 }
-      );
+      return errorResponse(`Failed to update member: ${error.message}`, 500);
     }
 
     // Trigger outcome calculation for interventions (background, non-blocking)
@@ -114,12 +99,8 @@ export async function POST(
       console.error("Failed to trigger outcome calculation:", err);
     });
 
-    return NextResponse.json({ success: true });
+    return successResponse();
   } catch (error) {
-    console.error("Update last visit error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Update last visit error");
   }
 }

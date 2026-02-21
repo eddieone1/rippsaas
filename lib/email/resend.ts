@@ -1,38 +1,51 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface SendEmailParams {
   to: string;
   subject: string;
   body: string;
   from?: string;
+  /** When set, use this Resend API key (e.g. gym's own key); otherwise use RESEND_API_KEY env */
+  apiKey?: string | null;
 }
 
-export async function sendEmail({ to, subject, body, from }: SendEmailParams) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY not configured, email not sent");
-    return { id: "mock-email-id", error: null };
+export async function sendEmail({ to, subject, body, from, apiKey: providedKey }: SendEmailParams) {
+  const apiKey = (providedKey?.trim() || process.env.RESEND_API_KEY) ?? null;
+  if (!apiKey) {
+    console.warn("No Resend API key (gym or RESEND_API_KEY), email not sent");
+    return { id: null, error: "Resend API key not configured" };
   }
 
   try {
+    const resend = new Resend(apiKey);
+    const fromAddress = from || "Rip <onboarding@resend.dev>";
+    
+    console.log("Sending email via Resend:", { 
+      to, 
+      from: fromAddress, 
+      subject,
+      apiKeySource: providedKey?.trim() ? "gym" : "env"
+    });
+
     const { data, error } = await resend.emails.send({
-      from: from || "FloCRM <noreply@flocrm.com>",
+      from: fromAddress,
       to,
       subject,
       html: body.startsWith("<!DOCTYPE html>") || body.startsWith("<html") ? body : body.replace(/\n/g, "<br>"),
     });
 
     if (error) {
+      console.error("Resend API returned error:", error);
       // Extract error message from Resend error object
       const errorMessage = error instanceof Error 
         ? error.message 
         : (typeof error === 'object' && error !== null && 'message' in error)
         ? String((error as any).message)
         : JSON.stringify(error);
-      throw new Error(errorMessage);
+      return { id: null, error: errorMessage };
     }
 
+    console.log("Email sent successfully:", data?.id);
     return { id: data?.id || null, error: null };
   } catch (error) {
     console.error("Resend email error:", error);
@@ -71,9 +84,12 @@ export function createBrandedEmailTemplate(
 ): string {
   const primaryColor = branding?.brand_primary_color || "#2563EB";
   const secondaryColor = branding?.brand_secondary_color || "#1E40AF";
-  const logoHtml = branding?.logo_url
-    ? `<img src="${branding.logo_url}" alt="${branding.gym_name || 'Gym'}" style="max-height: 60px; max-width: 200px; margin-bottom: 20px;" />`
-    : `<div style="font-size: 24px; font-weight: bold; color: ${primaryColor}; margin-bottom: 20px;">${branding?.gym_name || 'Gym'}</div>`;
+  // Use default logo if no custom logo is set
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rip.app';
+  const defaultLogoUrl = `${baseUrl}/rip dashboard logo - Edited.png`.replace(/ /g, '%20');
+  const logoUrl = branding?.logo_url || defaultLogoUrl;
+  const logoAlt = branding?.logo_url ? (branding.gym_name || 'Gym') : 'Rip logo';
+  const logoHtml = `<img src="${logoUrl}" alt="${logoAlt}" style="max-height: 80px; max-width: 250px; margin-bottom: 20px;" />`;
   
   return `
 <!DOCTYPE html>

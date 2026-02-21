@@ -9,7 +9,7 @@ function getRiskBadgeColor(level: string) {
     case "medium":
       return "bg-yellow-100 text-yellow-800";
     case "low":
-      return "bg-blue-100 text-blue-800";
+      return "bg-lime-100 text-lime-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -109,8 +109,8 @@ export default async function MembersTable({ gymId }: { gymId: string }) {
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-sm">
                       <Link
-                        href={`/members/${member.id}`}
-                        className="text-blue-600 hover:text-blue-900"
+                        href={`/members/${member.id}?from=dashboard`}
+                        className="text-lime-600 hover:text-lime-900"
                       >
                         View Details
                       </Link>

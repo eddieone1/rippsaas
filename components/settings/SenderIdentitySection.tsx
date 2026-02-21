@@ -40,7 +40,7 @@ export default function SenderIdentitySection({ gym }: { gym: Gym | null }) {
         setError(data.error || "Failed to save");
         return;
       }
-      setSuccess("Campaign sender settings saved.");
+      setSuccess("Sender settings saved.");
       router.refresh();
     } catch {
       setError("Failed to save");
@@ -51,9 +51,9 @@ export default function SenderIdentitySection({ gym }: { gym: Gym | null }) {
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-white/10 dark:bg-white/5">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Campaign sender</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Outreach sender</h2>
       <p className="text-sm text-gray-600 dark:text-white/70 mb-4">
-        Set the email address and display name for campaign emails, and the phone number for SMS.
+        Set the email address and display name for outreach emails, and the phone number for SMS.
       </p>
 
       {error && (

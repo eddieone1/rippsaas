@@ -111,9 +111,9 @@ export default function HabitDecayTimeline({ data, memberSpecificLabel }: HabitD
           <Line
             type="monotone"
             dataKey="score"
-            stroke="#2563eb"
+            stroke="#84cc16"
             strokeWidth={2}
-            dot={{ fill: "#2563eb", r: 3 }}
+            dot={{ fill: "#84cc16", r: 3 }}
             activeDot={{ r: 5 }}
           />
         </LineChart>

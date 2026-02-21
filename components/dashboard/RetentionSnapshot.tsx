@@ -155,7 +155,7 @@ export default async function RetentionSnapshot({ gymId }: { gymId: string }) {
         </div>
       </div>
 
-      {/* Campaigns Sent (Last 7 Days) */}
+      {/* Outreach Sent (Last 7 Days) */}
       <div className="rounded-lg border border-gray-200 bg-white px-4 py-5 shadow-sm">
         <div className="flex items-center">
           <div className="flex-shrink-0">
@@ -163,7 +163,7 @@ export default async function RetentionSnapshot({ gymId }: { gymId: string }) {
           </div>
           <div className="ml-4 w-0 flex-1">
             <dl>
-              <dt className="truncate text-sm font-medium text-gray-500">Campaigns Sent</dt>
+              <dt className="truncate text-sm font-medium text-gray-500">Outreach Sent</dt>
               <dd className="mt-1 text-2xl font-semibold text-gray-900">{campaignsSentLast7Days || 0}</dd>
               <dd className="text-xs text-gray-500 mt-1">Last 7 days</dd>
             </dl>

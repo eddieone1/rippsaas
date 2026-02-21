@@ -107,7 +107,7 @@ export default async function DashboardStats({
         icon="⚠️"
         variant={atRiskMembers && atRiskMembers > 0 ? "warning" : "default"}
         primaryColor={primaryColor}
-        tooltip="Members with high or medium churn risk levels. These members show signs of potential cancellation based on inactivity, distance, age, and other factors. Consider sending engagement campaigns to retain them."
+        tooltip="Members with high or medium churn risk levels. These members show signs of potential cancellation based on inactivity, distance, age, and other factors. Consider setting up plays to retain them."
       />
       <StatsCard
         title="Monthly Churn %"
@@ -118,7 +118,7 @@ export default async function DashboardStats({
         tooltip="The percentage of members who cancelled their membership this month. Calculated as: (Members cancelled this month) ÷ (Total members at start of month) × 100. A rate above 5% is concerning, while below 3% is healthy."
       />
       <StatsCard
-        title="Campaigns Sent (This Month)"
+        title="Outreach Sent (This Month)"
         value={campaignsSent || 0}
         icon="📧"
         primaryColor={primaryColor}
@@ -129,7 +129,7 @@ export default async function DashboardStats({
         value={`${reEngagementRate}%`}
         icon="📈"
         primaryColor={primaryColor}
-        tooltip="The percentage of members who returned after receiving a campaign message. This shows how effective your engagement campaigns are at bringing members back. Higher rates indicate more successful retention efforts."
+        tooltip="The percentage of members who returned after receiving an outreach message. This shows how effective your plays are at bringing members back. Higher rates indicate more successful retention efforts."
       />
     </div>
   );

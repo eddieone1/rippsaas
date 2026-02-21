@@ -12,7 +12,7 @@ import AtRiskMembersTable from "@/components/members/AtRiskMembersTable";
  * - Filter by risk level
  * - Shows assigned coach
  * - Direct CTA to view member details
- * - Performance optimized with pagination
+ * - Performance optimised with pagination
  */
 export default async function AtRiskMembersPage() {
   const { gymId } = await getGymContext();
@@ -32,7 +32,7 @@ export default async function AtRiskMembersPage() {
       </div>
 
       {/* Table Component */}
-      <AtRiskMembersTable />
+      <AtRiskMembersTable gymId={gymId} />
     </div>
   );
 }

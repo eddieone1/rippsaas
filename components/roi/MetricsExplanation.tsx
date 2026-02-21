@@ -22,8 +22,8 @@ export default function MetricsExplanation() {
             <div>
               <p className="font-semibold text-gray-900">Revenue saved</p>
               <p>
-                Estimated revenue from members who reengaged after an
-                intervention. Uses each member’s membership type and billing
+                Estimated revenue from members who made another visit after an
+                intervention (re-engagement = physical return to the gym). Uses each member’s membership type and billing
                 frequency; assumes saved members stay active for 3 months. No
                 fabricated data.
               </p>
@@ -31,8 +31,8 @@ export default function MetricsExplanation() {
             <div>
               <p className="font-semibold text-gray-900">Members retained</p>
               <p>
-                Count of members who reengaged after a campaign send or coach
-                action. Source: campaign_sends with outcome = re_engaged.
+                Count of members who made another visit after a campaign send or coach
+                action. Re-engagement = member visited the gym. Source: campaign_sends with outcome = re_engaged.
               </p>
             </div>
             <div>

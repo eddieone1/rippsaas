@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
     if (existingUser?.gym_id) {
       return NextResponse.json(
-        { error: 'You are already part of an organization' },
+        { error: 'You are already part of an organisation' },
         { status: 400 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     if (userError) {
       return NextResponse.json(
-        { error: `Failed to join organization: ${userError.message}` },
+        { error: `Failed to join organisation: ${userError.message}` },
         { status: 500 }
       );
     }

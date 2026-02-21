@@ -6,6 +6,8 @@ import CommitmentScoreGauge from "./CommitmentScoreGauge";
 import HabitDecayTimeline from "./HabitDecayTimeline";
 import RiskFlags from "./RiskFlags";
 import RecommendedAction from "./RecommendedAction";
+import SingleMemberCampaignModal from "./SingleMemberCampaignModal";
+import MemberActions from "./MemberActions";
 import CoachAssignment from "./CoachAssignment";
 import EngagementHistory from "./EngagementHistory";
 import MemberEditDetails from "./MemberEditDetails";
@@ -78,6 +80,7 @@ interface MemberProfileData {
 
 interface MemberProfileProps {
   memberId: string;
+  backFrom?: "dashboard" | "members" | "at-risk";
 }
 
 /**
@@ -86,10 +89,17 @@ interface MemberProfileProps {
  * This is where retention happens.
  * Comprehensive view of member engagement, risk, and actions.
  */
-export default function MemberProfile({ memberId }: MemberProfileProps) {
+const BACK_LINKS: Record<string, { href: string; label: string }> = {
+  dashboard: { href: "/dashboard", label: "Back to Dashboard" },
+  members: { href: "/members", label: "Back to Members" },
+  "at-risk": { href: "/members/at-risk", label: "Back to At Risk Members" },
+};
+
+export default function MemberProfile({ memberId, backFrom = "at-risk" }: MemberProfileProps) {
   const [data, setData] = useState<MemberProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRunCampaignModal, setShowRunCampaignModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -161,7 +171,7 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
       case "medium":
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "low":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-lime-100 text-lime-800 border-lime-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
@@ -171,10 +181,10 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
     <div className="space-y-6">
       {/* Back Link */}
       <Link
-        href="/members/at-risk"
+        href={BACK_LINKS[backFrom]?.href ?? "/members/at-risk"}
         className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
       >
-        ← Back to At-Risk Members
+        ← {BACK_LINKS[backFrom]?.label ?? "Back to At Risk Members"}
       </Link>
 
       {/* Header */}
@@ -221,6 +231,21 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
         reason={recommendedAction.reason}
         suggestedCampaign={recommendedAction.suggestedCampaign}
         memberId={memberId}
+        onRunCampaign={() => setShowRunCampaignModal(true)}
+      />
+
+      <SingleMemberCampaignModal
+        open={showRunCampaignModal}
+        onClose={() => setShowRunCampaignModal(false)}
+        member={{
+          id: member.id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          lastVisitDate: member.lastVisitDate,
+          email: member.email,
+          phone: member.phone,
+        }}
+        onSent={fetchProfile}
       />
 
       {/* Main Content Grid */}
@@ -243,6 +268,17 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
               </p>
             </div>
           </div>
+
+          {/* Quick Actions (Send Email, Update Last Visit) */}
+          <MemberActions
+            member={{
+              id: member.id,
+              firstName: member.firstName,
+              lastName: member.lastName,
+              email: member.email,
+            }}
+            onActionComplete={fetchProfile}
+          />
 
           {/* Behaviour interpretation & emotional flags */}
           {memberIntelligence && (
@@ -286,12 +322,35 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
             onAssign={fetchProfile}
           />
 
+          {/* Coach & staff notes – prominent, always visible. Edit details opens modal for email/phone only. */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">Notes</h3>
+              <MemberEditDetails
+                memberId={memberId}
+                email={member.email ?? ""}
+                phone={member.phone ?? ""}
+                specialNotes={member.specialNotes ?? ""}
+                onSaved={fetchProfile}
+                includeNotes={false}
+              />
+            </div>
+            <p className="text-sm text-gray-500 mb-2">
+              Add details for coaches and staff. Click Edit to update.
+            </p>
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-4 min-h-[80px]">
+              {member.specialNotes ? (
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{member.specialNotes}</p>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No notes yet</p>
+              )}
+            </div>
+          </div>
+
           {/* Member Info + Edit */}
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Member Info
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Member Info</h3>
               <MemberEditDetails
                 memberId={memberId}
                 email={member.email ?? ""}
@@ -313,14 +372,6 @@ export default function MemberProfile({ memberId }: MemberProfileProps) {
                   {member.phone || "-"}
                 </dd>
               </div>
-              {member.specialNotes != null && member.specialNotes !== "" && (
-                <div>
-                  <dt className="text-xs font-medium text-gray-500">Special notes</dt>
-                  <dd className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">
-                    {member.specialNotes}
-                  </dd>
-                </div>
-              )}
               <div>
                 <dt className="text-xs font-medium text-gray-500">Joined</dt>
                 <dd className="mt-1 text-sm text-gray-900">

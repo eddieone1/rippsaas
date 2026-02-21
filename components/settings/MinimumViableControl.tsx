@@ -26,9 +26,11 @@ interface UserProfile {
 export default function MinimumViableControl({
   gym,
   userProfile,
+  onSuccess,
 }: {
   gym: Gym | null;
   userProfile: UserProfile | null;
+  onSuccess?: (msg: string) => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -76,6 +78,7 @@ export default function MinimumViableControl({
               country: "UK",
             });
             setSuccess("Address found and populated");
+            onSuccess?.("Address found");
             setSearchingAddress(false);
             return;
           }
@@ -105,6 +108,7 @@ export default function MinimumViableControl({
             country: "UK",
           });
           setSuccess("Address found and populated");
+          onSuccess?.("Address found");
         } else {
           setError("Address not found. Please try a different search term.");
         }
@@ -149,6 +153,7 @@ export default function MinimumViableControl({
       }
 
       setSuccess("Profile updated successfully");
+      onSuccess?.("Profile updated");
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
@@ -182,7 +187,7 @@ export default function MinimumViableControl({
               type="text"
               value={formData.gym_name}
               onChange={(e) => setFormData({ ...formData, gym_name: e.target.value })}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               required
             />
           </div>
@@ -195,7 +200,7 @@ export default function MinimumViableControl({
               type="text"
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               required
             />
           </div>
@@ -211,7 +216,7 @@ export default function MinimumViableControl({
                 value={addressSearch}
                 onChange={(e) => setAddressSearch(e.target.value)}
                 placeholder="Search by postcode or address..."
-                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               />
               <button
                 type="button"
@@ -228,28 +233,28 @@ export default function MinimumViableControl({
                 value={formData.address_line1}
                 onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
                 placeholder="Address Line 1"
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               />
               <input
                 type="text"
                 value={formData.address_line2}
                 onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
                 placeholder="Address Line 2 (optional)"
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               />
               <input
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="City"
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               />
               <input
                 type="text"
                 value={formData.postcode}
                 onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
                 placeholder="Postcode"
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-lime-500 focus:outline-none focus:ring-lime-500"
               />
             </div>
           </div>
@@ -257,7 +262,7 @@ export default function MinimumViableControl({
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 disabled:opacity-50"
           >
             {loading ? "Saving..." : "Save Changes"}
           </button>
@@ -276,7 +281,7 @@ export default function MinimumViableControl({
                   gym?.subscription_status === "active"
                     ? "bg-green-100 text-green-800"
                     : gym?.subscription_status === "trialing"
-                    ? "bg-blue-100 text-blue-800"
+                    ? "bg-lime-100 text-lime-800"
                     : "bg-gray-100 text-gray-800"
                 }`}
               >
