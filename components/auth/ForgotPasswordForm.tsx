@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const redirectTo = searchParams.get("redirect");
+  const token = searchParams.get("token");
+  const loginParams = new URLSearchParams();
+  if (redirectTo) loginParams.set("redirect", redirectTo);
+  if (token) loginParams.set("token", token);
+  const backToLoginHref = loginParams.toString() ? `/login?${loginParams}` : "/login";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +97,7 @@ export default function ForgotPasswordForm() {
 
       <div className="text-center">
         <Link
-          href="/login"
+          href={backToLoginHref}
           className="text-sm font-medium text-lime-600 hover:text-lime-500"
         >
           ← Back to sign in

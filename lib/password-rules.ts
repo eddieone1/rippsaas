@@ -28,3 +28,19 @@ export function validatePassword(password: string): {
   }
   return { valid: true };
 }
+
+export type PasswordRuleStatus = {
+  length: boolean;
+  upper: boolean;
+  lower: boolean;
+  number: boolean;
+};
+
+export function getPasswordRuleStatus(password: string): PasswordRuleStatus {
+  return {
+    length: password.length >= MIN_LENGTH,
+    upper: HAS_UPPER.test(password),
+    lower: HAS_LOWER.test(password),
+    number: HAS_NUMBER.test(password),
+  };
+}

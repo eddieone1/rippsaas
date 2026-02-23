@@ -63,7 +63,7 @@ export default function Footer() {
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white/80">Support</h4>
             <ul className="mt-4 space-y-3">
               <li>
-                <Link href="/signup" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
+                <Link href="/support" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
                   Get in touch
                 </Link>
               </li>
