@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/campaigns/templates
  * Returns campaign templates available to the user's gym (gym-specific + default).

@@ -7,7 +7,7 @@ Plays, eligibility guardrails, approvals, sending (Email/SMS/WhatsApp), webhooks
 - Next.js App Router, TypeScript, Tailwind
 - Prisma ORM + PostgreSQL
 - zod for validation
-- Provider adapters: Twilio (SMS/WhatsApp), Postmark (Email); stubbed when env not set
+- Provider adapters: Twilio (SMS/WhatsApp), Resend (Email); stubbed when env not set
 
 ## Env vars
 
@@ -15,7 +15,7 @@ Plays, eligibility guardrails, approvals, sending (Email/SMS/WhatsApp), webhooks
 # Required for Prisma
 DATABASE_URL="postgresql://user:pass@localhost:5432/gym_retention"
 
-# Optional: demo tenant for API (default "demo-tenant")
+# Optional: demo tenant for dev/testing when gymId is not available
 INTERVENTIONS_DEMO_TENANT_ID=demo-tenant
 
 # Optional: cron / daily job base URL (for links in docs)
@@ -28,9 +28,9 @@ TWILIO_AUTH_TOKEN=...
 TWILIO_FROM_SMS=+1234567890
 TWILIO_FROM_WHATSAPP=whatsapp:+1234567890
 
-# Postmark (Email) – omit to stub
-POSTMARK_SERVER_TOKEN=...
-POSTMARK_FROM_EMAIL=noreply@yourdomain.com
+# Resend (Email) – omit to stub
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ## Setup
@@ -57,7 +57,7 @@ POSTMARK_FROM_EMAIL=noreply@yourdomain.com
 Run the batch that creates intervention candidates and sends (or queues for approval):
 
 ```bash
-curl -X POST "https://your-app.vercel.app/api/interventions/run-daily?tenantId=demo-tenant"
+curl -X POST "https://your-app.vercel.app/api/interventions/run-daily?tenantId=<gym-id>"
 ```
 
 - **Vercel Cron**: In `vercel.json` add:
@@ -88,11 +88,10 @@ Response shape: `{ created, scheduled, pendingApproval, sent, failed, skipped }`
 
 - **Twilio**: `POST /api/webhooks/twilio` – handle delivery/reply; update intervention status and create `MessageEvent`.  
   TODO: verify `X-Twilio-Signature` using `TWILIO_AUTH_TOKEN`.
-- **Postmark**: `POST /api/webhooks/postmark` – handle delivery/bounce; map `MessageID` to intervention, update status, create event.
+- **Resend**: Email is sent via Resend. For delivery/bounce tracking, configure Resend webhooks (not yet implemented; Postmark webhook route exists for legacy use).
 
-Configure in Twilio/Postmark dashboards:
+Configure in Twilio dashboard:
 - Twilio: Status callback URL = `{APP_BASE_URL}/api/webhooks/twilio`
-- Postmark: Webhook URL = `{APP_BASE_URL}/api/webhooks/postmark`
 
 ## UI pages
 

@@ -40,10 +40,10 @@ export default function Navbar() {
             Sign in
           </Link>
           <Link
-            href="/signup"
+            href="/audit"
             className="inline-flex items-center justify-center rounded-lg bg-[#9EFF00] px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
           >
-            Start free trial
+            Get Free Audit
           </Link>
         </nav>
       </div>

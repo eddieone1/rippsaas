@@ -48,20 +48,25 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="/settings#privacy" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
+                <Link href="/privacy" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
                   Privacy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/settings#terms" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
+                <Link href="/terms" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
                   Terms
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white/80">Support</h4>
             <ul className="mt-4 space-y-3">
+              <li>
+                <Link href="/audit" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
+                  Free Retention Audit
+                </Link>
+              </li>
               <li>
                 <Link href="/support" className="text-sm text-white/65 hover:text-[#9EFF00] transition-colors">
                   Get in touch

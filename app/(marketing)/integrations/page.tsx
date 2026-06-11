@@ -20,7 +20,7 @@ export default function IntegrationsPage() {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-xl border-2 border-lime-500 bg-white p-8 shadow-sm">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              We don't manage gyms. We manage member commitment.
+              We don&apos;t manage gyms. We manage member commitment.
             </h2>
             <p className="text-gray-600 mb-4">
               Your existing software handles bookings, payments, and operations brilliantly. Rip sits on top, adding retention intelligence without disrupting your workflow.
@@ -126,7 +126,7 @@ export default function IntegrationsPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
               <span className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 mb-2">Coming soon</span>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">ABC Fitness</h3>
-              <p className="text-sm text-gray-600">Enterprise gym chains. We're building direct integration.</p>
+              <p className="text-sm text-gray-600">Enterprise gym chains. We&apos;re building direct integration.</p>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export default function IntegrationsPage() {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              Need a different integration? <Link href="/signup" className="text-lime-600 hover:text-lime-500 font-medium">Contact us</Link> to discuss custom integration options.
+              Need a different integration? <Link href="/support" className="text-lime-600 hover:text-lime-500 font-medium">Contact us</Link> to discuss custom integration options.
             </p>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function IntegrationsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Leverage existing data</h3>
                 <p className="text-gray-600">
-                  You already have member data, visit history, and payment information. Rip uses what you've got, adding retention scoring and intervention tracking on top.
+                  You already have member data, visit history, and payment information. Rip uses what you&apos;ve got, adding retention scoring and intervention tracking on top.
                 </p>
               </div>
             </div>
@@ -234,14 +234,14 @@ export default function IntegrationsPage() {
             Ready to add retention intelligence to your existing systems?
           </h2>
           <p className="mt-4 text-gray-600">
-            Start with CSV import today. Add API integration when you're ready. No disruption, no migration, just retention intelligence on top of what you already have.
+            Start with CSV import today. Add API integration when you&apos;re ready. No disruption, no migration, just retention intelligence on top of what you already have.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/signup"
+              href="/audit"
               className="w-full sm:w-auto rounded-md bg-lime-500 px-6 py-3 text-base font-medium text-gray-900 hover:bg-lime-400 transition-colors"
             >
-              Get started
+              Get Free Audit
             </Link>
             <Link
               href="/pricing"

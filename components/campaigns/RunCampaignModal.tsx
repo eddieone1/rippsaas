@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePlanFeatures } from "@/components/plan/PlanFeaturesProvider";
 
 interface Template {
   id: string;
@@ -46,7 +47,12 @@ export default function RunCampaignModal({
   initialIncludeCancelled,
   recommendedTemplateId,
 }: RunCampaignModalProps) {
-  const [channel, setChannel] = useState<"email" | "sms">(initialChannel);
+  const { features } = usePlanFeatures();
+  const canSms = features.sms_campaigns;
+  const canAdvancedSegment = features.advanced_segmentation;
+  const [channel, setChannel] = useState<"email" | "sms">(
+    initialChannel === "sms" && !canSms ? "email" : initialChannel
+  );
   const [messageType, setMessageType] = useState<"template" | "custom">("template");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(initialTemplateId ?? "");
   const [targetSegment, setTargetSegment] = useState<"low" | "medium" | "high" | "all">(initialTargetSegment ?? "all");
@@ -180,7 +186,10 @@ export default function RunCampaignModal({
                 />
                 Email
               </label>
-              <label className="flex items-center text-gray-900">
+              <label
+                className={`flex items-center text-gray-900 ${!canSms ? "opacity-50" : ""}`}
+                title={!canSms ? "SMS campaigns require the Growth plan" : undefined}
+              >
                 <input
                   type="radio"
                   name="channel"
@@ -188,14 +197,17 @@ export default function RunCampaignModal({
                   checked={channel === "sms"}
                   onChange={(e) => {
                     setChannel(e.target.value as "email" | "sms");
-                    setSelectedTemplateId(""); // Reset template selection when changing channel
+                    setSelectedTemplateId("");
                     setTemplateSubject("");
                     setTemplateBody("");
                   }}
                   className="mr-2"
-                  disabled={loading}
+                  disabled={loading || !canSms}
                 />
                 SMS
+                {!canSms && (
+                  <span className="ml-1 text-xs text-gray-500">(Growth)</span>
+                )}
               </label>
             </div>
           </div>
@@ -206,16 +218,25 @@ export default function RunCampaignModal({
               Target segment
             </label>
             <select
-              value={targetSegment}
+              value={canAdvancedSegment ? targetSegment : "all"}
               onChange={(e) => setTargetSegment(e.target.value as "low" | "medium" | "high" | "all")}
               className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-lime-500 focus:outline-none focus:ring-lime-500"
-              disabled={loading}
+              disabled={loading || !canAdvancedSegment}
             >
               <option value="all">All risk levels</option>
-              <option value="low">Low risk members</option>
-              <option value="medium">Medium risk members</option>
-              <option value="high">High risk members</option>
+              {canAdvancedSegment && (
+                <>
+                  <option value="low">Low risk members</option>
+                  <option value="medium">Medium risk members</option>
+                  <option value="high">High risk members</option>
+                </>
+              )}
             </select>
+            {!canAdvancedSegment && (
+              <p className="mt-1 text-xs text-gray-500">
+                Risk-level targeting is available on the Growth plan.
+              </p>
+            )}
           </div>
 
           {/* Include cancelled members */}
@@ -223,13 +244,19 @@ export default function RunCampaignModal({
             <input
               type="checkbox"
               id="runIncludeCancelled"
-              checked={includeCancelled}
+              checked={canAdvancedSegment ? includeCancelled : false}
               onChange={(e) => setIncludeCancelled(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-lime-600 focus:ring-lime-500"
-              disabled={loading}
+              disabled={loading || !canAdvancedSegment}
             />
-            <label htmlFor="runIncludeCancelled" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="runIncludeCancelled"
+              className={`text-sm font-medium text-gray-700 ${!canAdvancedSegment ? "opacity-50" : ""}`}
+            >
               Include cancelled members
+              {!canAdvancedSegment && (
+                <span className="ml-1 text-xs text-gray-500">(Growth)</span>
+              )}
             </label>
           </div>
 

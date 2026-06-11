@@ -1,6 +1,8 @@
 "use client";
 
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { useState, useEffect } from "react";
+import { usePlanFeatures } from "@/components/plan/PlanFeaturesProvider";
 
 interface PlayData {
   id?: string;
@@ -92,6 +94,8 @@ export default function PlayFormModal({
   onClose,
   onSaved,
 }: PlayFormModalProps) {
+  const { features } = usePlanFeatures();
+  const canSms = features.sms_campaigns;
   const isEdit = !!playId;
   const [form, setForm] = useState<PlayData>(EMPTY_FORM);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
@@ -109,7 +113,7 @@ export default function PlayFormModal({
 
   useEffect(() => {
     if (!playId) return;
-    fetch(`/api/plays/${playId}`)
+    fetchWithAuth(`/api/plays/${playId}`)
       .then((r) => r.json())
       .then((data) => {
         if (!data.error) {
@@ -135,6 +139,7 @@ export default function PlayFormModal({
   }, [playId]);
 
   function toggleChannel(c: string) {
+    if ((c === "SMS" || c === "WHATSAPP") && !canSms) return;
     setForm((prev) => ({
       ...prev,
       channels: prev.channels.includes(c)
@@ -160,7 +165,7 @@ export default function PlayFormModal({
         templateSubject: form.templateSubject || null,
       };
 
-      const res = await fetch(url, {
+      const res = await fetchWithAuth(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -286,17 +291,29 @@ export default function PlayFormModal({
                 Channels
               </label>
               <div className="flex gap-4">
-                {["EMAIL", "SMS", "WHATSAPP"].map((c) => (
-                  <label key={c} className="flex items-center gap-2">
+                {["EMAIL", "SMS", "WHATSAPP"].map((c) => {
+                  const growthOnly = c === "SMS" || c === "WHATSAPP";
+                  const disabled = growthOnly && !canSms;
+                  return (
+                  <label
+                    key={c}
+                    className={`flex items-center gap-2 ${disabled ? "opacity-50" : ""}`}
+                    title={disabled ? "Requires Growth plan" : undefined}
+                  >
                     <input
                       type="checkbox"
                       checked={form.channels.includes(c)}
                       onChange={() => toggleChannel(c)}
+                      disabled={disabled}
                       className="rounded border-gray-300 text-lime-500 focus:ring-lime-500"
                     />
-                    <span className="text-sm text-gray-700">{c}</span>
+                    <span className="text-sm text-gray-700">
+                      {c}
+                      {disabled && <span className="text-xs text-gray-500"> (Growth)</span>}
+                    </span>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div>

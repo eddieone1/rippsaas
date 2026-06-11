@@ -9,7 +9,7 @@ interface CampaignTableProps {
   description?: string;
 }
 
-export default function CampaignTable({ campaigns, viewAllHref = "#", description }: CampaignTableProps) {
+export default function CampaignTable({ campaigns, viewAllHref = "/plays", description }: CampaignTableProps) {
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#2F3131] overflow-hidden shadow-lg">
       <div className="p-4 border-b border-white/[0.08]">

@@ -15,10 +15,10 @@ export default function StatCard() {
           <p className="mt-3 text-center text-white/65">Most gyms don&apos;t know why.</p>
           <div className="mt-8 flex justify-center">
             <Link
-              href="/signup"
+              href="/audit"
               className="rounded-lg bg-[#9EFF00] px-6 py-3 text-base font-semibold text-black hover:opacity-90 transition-opacity"
             >
-              Start free trial
+              See At-Risk Members
             </Link>
           </div>
         </div>

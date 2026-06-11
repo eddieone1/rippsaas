@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
 interface Member {
   firstName: string;
@@ -33,7 +34,7 @@ export default function ApprovalsPageClient({ tenantId }: ApprovalsPageClientPro
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `/api/logs?tenantId=${encodeURIComponent(tenantId)}&status=PENDING_APPROVAL&limit=100`
     );
     const data = await res.json();
@@ -45,7 +46,7 @@ export default function ApprovalsPageClient({ tenantId }: ApprovalsPageClientPro
   }, [tenantId]);
 
   async function approve(id: string) {
-    const res = await fetch(`/api/interventions/${id}/approve`, { method: "POST" });
+    const res = await fetchWithAuth(`/api/interventions/${id}/approve`, { method: "POST" });
     if (res.ok) {
       setInterventions((prev) => prev.filter((i) => i.id !== id));
     } else {
@@ -55,7 +56,7 @@ export default function ApprovalsPageClient({ tenantId }: ApprovalsPageClientPro
   }
 
   async function cancel(id: string) {
-    const res = await fetch(`/api/interventions/${id}/cancel`, { method: "POST" });
+    const res = await fetchWithAuth(`/api/interventions/${id}/cancel`, { method: "POST" });
     if (res.ok) {
       setInterventions((prev) => prev.filter((i) => i.id !== id));
     }
@@ -74,7 +75,12 @@ export default function ApprovalsPageClient({ tenantId }: ApprovalsPageClientPro
       {loading ? (
         <p className="text-gray-500">Loading…</p>
       ) : interventions.length === 0 ? (
-        <p className="text-gray-500">No interventions pending approval.</p>
+        <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
+          <p className="text-sm font-medium text-gray-900">No interventions pending approval</p>
+          <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
+            When the daily run creates interventions that require approval, they will appear here. Make sure you have plays created and auto-interventions enabled.
+          </p>
+        </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(byPlay).map(([playName, list]) => (

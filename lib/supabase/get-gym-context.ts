@@ -25,7 +25,7 @@ export async function getGymContext(): Promise<{
   // Use maybeSingle() to handle cases where profile might not exist yet
   const { data: userProfile, error } = await supabase
     .from("users")
-    .select("*, gym_id")
+    .select("*, gym_id, onboarding_completed_at")
     .eq("id", user.id)
     .maybeSingle();
   

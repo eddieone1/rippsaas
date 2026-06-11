@@ -12,12 +12,17 @@ export default async function GymInfoPage() {
     redirect("/login");
   }
 
-  // Get user profile to check gym status
+  // Get user profile to check gym status and pre-fill owner name
   const { data: userProfile } = await supabase
     .from("users")
-    .select("gym_id")
+    .select("gym_id, full_name, onboarding_completed_at")
     .eq("id", user.id)
     .single();
+
+  // Onboarding complete → dashboard
+  if (userProfile?.onboarding_completed_at) {
+    redirect("/dashboard");
+  }
 
   // If user has a gym_id, check if gym info is already filled in
   if (userProfile?.gym_id) {
@@ -27,11 +32,10 @@ export default async function GymInfoPage() {
       .eq("id", userProfile.gym_id)
       .single();
 
-    // If gym has name (not default) and address, onboarding is complete - redirect to dashboard
+    // Gym complete → go to payment (next step), don't skip to dashboard
     if (gym?.name && gym.name !== "My Gym" && gym?.address_line1) {
-      redirect("/dashboard");
+      redirect("/onboarding/payment");
     }
-    // Otherwise, allow them to continue with onboarding (gym exists but info not filled)
   }
   // If no gym_id, this is unusual but allow them to proceed
   // (The form submission will handle creating/updating the gym)
@@ -47,7 +51,7 @@ export default async function GymInfoPage() {
             We&apos;ll use this to personalise your experience and member insights
           </p>
         </div>
-        <GymInfoForm />
+        <GymInfoForm defaultOwnerName={userProfile?.full_name ?? undefined} />
       </div>
     </div>
   );

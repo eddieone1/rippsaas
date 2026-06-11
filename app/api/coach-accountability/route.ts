@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireApiAuth } from "@/lib/auth/guards";
+import { requireApiAuth, ApiAuthError } from "@/lib/auth/guards";
+import { requirePlanFeature } from "@/lib/auth/plan-guards";
 import { successResponse, handleApiError } from "@/lib/api/response";
 import type {
   Member,
@@ -10,6 +11,8 @@ import type {
   ReasonChip,
 } from "@/components/coach-accountability/types";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/coach-accountability
  *
@@ -19,6 +22,7 @@ import type {
 export async function GET() {
   try {
     const { gymId } = await requireApiAuth();
+    await requirePlanFeature(gymId, "coach_tasks");
     const supabase = await createClient();
 
     // Fetch members, coaches, assignments, and touches in parallel

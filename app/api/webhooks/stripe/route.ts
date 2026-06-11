@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -33,46 +33,105 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   try {
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const gymId = session.metadata?.gym_id as string | undefined;
+        const customerId = session.customer as string | undefined;
+        const subscriptionId = session.subscription as string | undefined;
+
+        if (!gymId && !customerId) break;
+
+        const planId = session.metadata?.plan_id as string | undefined;
+        const update: Record<string, unknown> = {
+          stripe_customer_id: customerId || undefined,
+          stripe_subscription_id: subscriptionId || undefined,
+        };
+
+        if (planId === "starter_49" || planId === "growth_79") {
+          update.plan_id = planId;
+        }
+
+        if (session.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          );
+          update.subscription_status =
+            subscription.status === "active"
+              ? "active"
+              : subscription.status === "trialing"
+              ? "trialing"
+              : subscription.status === "past_due"
+              ? "past_due"
+              : "canceled";
+        }
+
+        if (gymId) {
+          await adminClient.from("gyms").update(update).eq("id", gymId);
+        } else if (customerId) {
+          await adminClient
+            .from("gyms")
+            .update(update)
+            .eq("stripe_customer_id", customerId);
+        }
+        break;
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const gymId = subscription.metadata?.gym_id as string | undefined;
 
-        // Update gym subscription status
-        await supabase
-          .from("gyms")
-          .update({
-            stripe_subscription_id: subscription.id,
-            subscription_status:
-              subscription.status === "active"
-                ? "active"
-                : subscription.status === "trialing"
-                ? "trialing"
-                : subscription.status === "past_due"
-                ? "past_due"
-                : "canceled",
-          })
-          .eq("stripe_customer_id", customerId);
+        const status =
+          subscription.status === "active"
+            ? "active"
+            : subscription.status === "trialing"
+            ? "trialing"
+            : subscription.status === "past_due"
+            ? "past_due"
+            : "canceled";
 
+        const planId = subscription.metadata?.plan_id as string | undefined;
+        const update: Record<string, unknown> = {
+          stripe_subscription_id: subscription.id,
+          subscription_status: status,
+        };
+
+        if (planId === "starter_49" || planId === "growth_79") {
+          update.plan_id = planId;
+        }
+
+        if (gymId) {
+          await adminClient.from("gyms").update(update).eq("id", gymId);
+        } else {
+          await adminClient
+            .from("gyms")
+            .update(update)
+            .eq("stripe_customer_id", customerId);
+        }
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const gymId = subscription.metadata?.gym_id as string | undefined;
 
-        // Update gym subscription status to canceled
-        await supabase
-          .from("gyms")
-          .update({
-            subscription_status: "canceled",
-          })
-          .eq("stripe_customer_id", customerId);
-
+        if (gymId) {
+          await adminClient
+            .from("gyms")
+            .update({ subscription_status: "canceled" })
+            .eq("id", gymId);
+        } else {
+          await adminClient
+            .from("gyms")
+            .update({ subscription_status: "canceled" })
+            .eq("stripe_customer_id", customerId);
+        }
         break;
       }
 

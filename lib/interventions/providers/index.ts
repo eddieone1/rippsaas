@@ -1,11 +1,11 @@
 import type { EmailProvider, SmsProvider, WhatsAppProvider } from "../types";
 import { getTwilioAdapter } from "./twilio";
-import { getPostmarkAdapter } from "./postmark";
+import { getResendAdapter } from "./resend";
 
 export type { EmailProvider, SmsProvider, WhatsAppProvider };
 
 export function getEmailProvider(): EmailProvider {
-  return getPostmarkAdapter();
+  return getResendAdapter();
 }
 
 export function getSmsProvider(): SmsProvider {

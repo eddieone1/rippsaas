@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { getGymContext } from "@/lib/supabase/get-gym-context";
+import type { PlanAccess } from "@/lib/plan-features";
 import NavbarClient from "./NavbarClient";
 
-export default async function Navbar() {
+export default async function Navbar({
+  planAccess,
+}: {
+  planAccess?: PlanAccess;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,5 +39,12 @@ export default async function Navbar() {
     }
   }
 
-  return <NavbarClient branding={branding} userRole={userRole} gymId={gymId} />;
+  return (
+    <NavbarClient
+      branding={branding}
+      userRole={userRole}
+      gymId={gymId}
+      showCoachAccountability={planAccess?.features.coach_tasks ?? false}
+    />
+  );
 }

@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/interventions",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-nudges",
+      "schedule": "0 10 * * *"
     }
   ]
 }

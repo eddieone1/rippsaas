@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireApiAuth } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/campaigns/audience-counts
  * Returns audience counts for multiple trigger_days (for quick send buttons).

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import BrandingSection from "./BrandingSection";
 import PersonalInfoSection from "./PersonalInfoSection";
 import IntegrationsSection from "./IntegrationsSection";
+import SubscriptionSection from "./SubscriptionSection";
 import StudioIntegrationsSection from "./StudioIntegrationsSection";
 import SettingsMembersSection from "./SettingsMembersSection";
 import MembershipTypesTab from "./MembershipTypesTab";
@@ -19,6 +20,7 @@ interface Gym {
   id: string;
   name: string;
   subscription_status: string;
+  trial_ends_at?: string | null;
   logo_url?: string | null;
   brand_primary_color?: string | null;
   brand_secondary_color?: string | null;
@@ -65,10 +67,24 @@ export default function SettingsContent({
   isOwner,
 }: SettingsContentProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showSuccess = useCallback((msg: string) => {
     setToastMessage(msg);
   }, []);
+
+  // Scroll to subscription when returning from Stripe checkout
+  useEffect(() => {
+    const upgraded = searchParams.get("upgraded");
+    if (upgraded === "1") {
+      document.getElementById("subscription")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      showSuccess("Welcome! Your subscription is now active.");
+      router.replace("/settings", { scroll: false });
+    }
+  }, [searchParams, router, showSuccess]);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
@@ -119,9 +135,12 @@ export default function SettingsContent({
         <section id="personal" className="scroll-mt-24">
           <PersonalInfoSection onSuccess={showSuccess} />
         </section>
+        <section id="subscription" className="scroll-mt-24">
+          <SubscriptionSection gym={gym} />
+        </section>
         <section id="gym-profile" className="scroll-mt-24">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Gym profile & subscription</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Gym profile</h2>
             <MinimumViableControl gym={gym} userProfile={userProfile} onSuccess={showSuccess} />
           </div>
         </section>

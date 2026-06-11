@@ -8,14 +8,14 @@ export default function FinalCTA() {
           Ready to stop losing members and start keeping them?
         </h2>
         <p className="mt-4 text-lg text-white/65 max-w-xl mx-auto">
-          Join gyms and studios that use Rip to see which messages actually bring members back.
+          Start with a free retention audit, then subscribe when you&apos;re ready to track and reduce churn.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
-            href="/signup"
+            href="/audit"
             className="w-full sm:w-auto inline-flex justify-center rounded-lg bg-[#9EFF00] px-6 py-3 text-base font-semibold text-black hover:opacity-90 transition-opacity"
           >
-            Start free trial
+            Get Free Retention Audit
           </Link>
           <Link
             href="/pricing"

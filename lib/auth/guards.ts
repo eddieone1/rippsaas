@@ -61,7 +61,7 @@ export async function requireAuth(): Promise<AuthContext> {
 }
 
 const ACTION_ROLES: Record<string, ("owner" | "admin" | "coach")[]> = {
-  manage_settings: ["owner"],
+  manage_settings: ["owner", "admin"],
   invite_users: ["owner"],
 };
 

@@ -17,7 +17,11 @@ interface CSVRow {
   status?: string;
 }
 
-export default function CSVUploadForm() {
+interface CSVUploadFormProps {
+  onSuccess?: () => void;
+}
+
+export default function CSVUploadForm({ onSuccess }: CSVUploadFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -169,6 +173,7 @@ export default function CSVUploadForm() {
       }
 
       const result = data.data ?? data;
+      onSuccess?.();
       const params = new URLSearchParams();
       if (result.imported) params.set("imported", String(result.imported));
       if (result.updated) params.set("updated", String(result.updated));

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireAction } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import SettingsContent from "@/components/settings/SettingsContent";
@@ -11,7 +12,7 @@ export default async function SettingsPage() {
   // Exclude integration secrets so they are never sent to the client
   const { data: gym } = await supabase
     .from("gyms")
-    .select("id, name, owner_email, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, created_at, updated_at, sender_name, sender_email, sms_from_number, logo_url, brand_primary_color, brand_secondary_color, address_line1, address_line2, city, postcode, country, latitude, longitude")
+    .select("id, name, owner_email, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, plan_id, created_at, updated_at, sender_name, sender_email, sms_from_number, logo_url, brand_primary_color, brand_secondary_color, address_line1, address_line2, city, postcode, country, latitude, longitude")
     .eq("id", gymId)
     .single();
 
@@ -43,13 +44,15 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <SettingsContent
-        gym={gym}
-        userProfile={userProfile}
-        membershipTypes={membershipTypes ?? []}
-        memberCount={memberCount}
-        isOwner={!!isOwner}
-      />
+      <Suspense fallback={<div className="animate-pulse h-64 rounded-lg bg-gray-100" />}>
+        <SettingsContent
+          gym={gym}
+          userProfile={userProfile}
+          membershipTypes={membershipTypes ?? []}
+          memberCount={memberCount}
+          isOwner={!!isOwner}
+        />
+      </Suspense>
     </div>
   );
 }

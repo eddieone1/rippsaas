@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import PlayFormModal from "./PlayFormModal";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
 interface Play {
   id: string;
@@ -23,7 +24,7 @@ export default function PlaysSection() {
 
   const loadPlays = useCallback(() => {
     setLoading(true);
-    fetch("/api/plays")
+    fetchWithAuth("/api/plays")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setPlays(data);
@@ -37,7 +38,7 @@ export default function PlaysSection() {
   }, [loadPlays]);
 
   async function toggleActive(play: Play) {
-    const res = await fetch(`/api/plays/${play.id}`, {
+    const res = await fetchWithAuth(`/api/plays/${play.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !play.isActive }),
@@ -53,7 +54,7 @@ export default function PlaysSection() {
 
   async function deletePlay(id: string) {
     if (!confirm("Delete this play? This cannot be undone.")) return;
-    const res = await fetch(`/api/plays/${id}`, { method: "DELETE" });
+    const res = await fetchWithAuth(`/api/plays/${id}`, { method: "DELETE" });
     if (res.ok) {
       setPlays((prev) => prev.filter((p) => p.id !== id));
     }
@@ -97,10 +98,16 @@ export default function PlaysSection() {
             <div className="text-4xl opacity-50 mb-3">⚡</div>
             <p className="text-sm font-medium text-gray-900">No automated plays yet</p>
             <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
-              Create a play to define outreach rules. The system runs daily and queues interventions for your approval.
+              Create your first play to define outreach rules. The system runs daily and queues interventions for your approval.
             </p>
-            <p className="mt-2 text-xs text-gray-500">
-              Use presets to get started quickly.
+            <p className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowNewForm(true)}
+                className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400"
+              >
+                Create your first play
+              </button>
             </p>
           </div>
         ) : (

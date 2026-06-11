@@ -11,14 +11,14 @@ export default function Hero() {
               <span className="text-[#9EFF00]">Start Predicting Churn.</span>
             </h1>
             <p className="mt-6 text-lg text-white/65 max-w-xl">
-              Identify at-risk members, automate outreach, and prove which messages bring them back — the only platform that shows you what works.
+              See which members are at risk before paying. Identify churn early, automate outreach, and prove which messages bring them back.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                href="/signup"
+                href="/audit"
                 className="inline-flex justify-center rounded-lg bg-[#9EFF00] px-6 py-3 text-base font-semibold text-black hover:opacity-90 transition-opacity"
               >
-                Start free trial
+                Get Free Retention Audit
               </Link>
               <Link
                 href="/pricing"
@@ -28,7 +28,7 @@ export default function Hero() {
               </Link>
             </div>
             <p className="mt-5 text-sm text-white/50">
-              No credit card required • 14-day trial • Works with your gym software
+              No card required for your free audit • Works with your gym software
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-white/45">
               <span>Mindbody</span>

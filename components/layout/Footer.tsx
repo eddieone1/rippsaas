@@ -40,13 +40,13 @@ export default function Footer() {
             </Link>
             <span className="text-gray-500" aria-hidden>|</span>
             <Link
-              href="/settings#privacy"
+              href="/privacy"
               className="hover:text-lime-400 transition-colors"
             >
               Privacy
             </Link>
             <Link
-              href="/settings#terms"
+              href="/terms"
               className="hover:text-lime-400 transition-colors"
             >
               Terms

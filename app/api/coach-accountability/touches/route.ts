@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireApiAuth } from "@/lib/auth/guards";
+import { requirePlanFeature } from "@/lib/auth/plan-guards";
 import {
   successResponse,
   errorResponse,
@@ -15,6 +16,7 @@ import {
 export async function POST(request: Request) {
   try {
     const { gymId } = await requireApiAuth();
+    await requirePlanFeature(gymId, "coach_tasks");
     const supabase = await createClient();
 
     const body = await request.json();

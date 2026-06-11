@@ -50,30 +50,75 @@ export async function POST(request: Request) {
 
     let gymId = userProfile?.gym_id;
 
-    // If user doesn't have a gym_id, create one (edge case - should have been created during signup)
+    // If user doesn't have a gym_id, create or reuse one (edge case - should have been created during signup)
     if (!gymId) {
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
-
-      const { data: newGym, error: createGymError } = await adminClient
-        .from("gyms")
-        .insert({
-          name: "My Gym", // Will be updated below
-          owner_email: user.email || "",
-          subscription_status: "trialing",
-          trial_ends_at: trialEndsAt.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (createGymError || !newGym) {
+      const ownerEmail = user.email || "";
+      if (!ownerEmail) {
         return NextResponse.json(
-          { error: `Failed to create gym: ${createGymError?.message || "Unknown error"}` },
-          { status: 500 }
+          { error: "User email is required to create a gym" },
+          { status: 400 }
         );
       }
 
-      gymId = newGym.id;
+      // Check if gym already exists for this owner_email (handles duplicate key)
+      const { data: existingGym } = await adminClient
+        .from("gyms")
+        .select("id")
+        .eq("owner_email", ownerEmail)
+        .maybeSingle();
+
+      if (existingGym) {
+        gymId = existingGym.id;
+        await adminClient
+          .from("gyms")
+          .update({
+            subscription_status: "canceled",
+            trial_ends_at: null,
+          })
+          .eq("id", gymId);
+      } else {
+        const { data: newGym, error: createGymError } = await adminClient
+          .from("gyms")
+          .insert({
+            name: "My Gym", // Will be updated below
+            owner_email: ownerEmail,
+            subscription_status: "canceled",
+            trial_ends_at: null,
+          })
+          .select()
+          .single();
+
+        if (createGymError) {
+          // If duplicate (race condition), fetch existing
+          if (createGymError.message.includes("owner_email_key")) {
+            const { data: raceGym } = await adminClient
+              .from("gyms")
+              .select("id")
+              .eq("owner_email", ownerEmail)
+              .single();
+            if (raceGym) {
+              gymId = raceGym.id;
+            } else {
+              return NextResponse.json(
+                { error: `Failed to create gym: ${createGymError.message}` },
+                { status: 500 }
+              );
+            }
+          } else {
+            return NextResponse.json(
+              { error: `Failed to create gym: ${createGymError.message}` },
+              { status: 500 }
+            );
+          }
+        } else if (newGym) {
+          gymId = newGym.id;
+        } else {
+          return NextResponse.json(
+            { error: "Failed to create gym" },
+            { status: 500 }
+          );
+        }
+      }
 
       // Update user profile with gym_id
       const { error: updateUserError } = await adminClient

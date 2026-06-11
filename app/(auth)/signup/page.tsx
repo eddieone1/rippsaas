@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import SignupForm from "@/components/auth/SignupForm";
 import Link from "next/link";
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: { plan?: string };
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,6 +16,14 @@ export default async function SignupPage() {
   if (user) {
     redirect("/dashboard");
   }
+
+  const selectedPlan = searchParams.plan;
+  const planLabel =
+    selectedPlan === "growth_79"
+      ? "Growth"
+      : selectedPlan === "starter_49"
+        ? "Starter"
+        : null;
 
   return (
     <div className="flex flex-1 w-full items-center justify-center px-4">
@@ -32,13 +44,19 @@ export default async function SignupPage() {
             </span>
           </div>
           <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Start your 14-day free trial
+            {planLabel ? `Create your ${planLabel} account` : "Create your Rip account"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Join gym owners using Rip to predict churn and prove which messages bring members back.
+            {planLabel
+              ? `Set up your gym to start on the ${planLabel} plan (£${planLabel === "Growth" ? "79" : "49"}/month per location).`
+              : "Join gym owners using Rip to predict churn and prove which messages bring members back."}
           </p>
           <p className="mt-3 text-center text-xs text-gray-500">
-            14-day free trial • No credit card required • Cancel anytime
+            Not ready to subscribe?{" "}
+            <Link href="/audit" className="font-medium text-lime-600 hover:text-lime-500">
+              Get a free retention audit
+            </Link>{" "}
+            — no card required.
           </p>
         </div>
 
@@ -51,11 +69,11 @@ export default async function SignupPage() {
             </li>
             <li className="flex items-center gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime-100 text-lime-700 font-medium">2</span>
-              Start your 14-day trial
+              Choose Starter or Growth
             </li>
             <li className="flex items-center gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime-100 text-lime-700 font-medium">3</span>
-              Upload members and see what works
+              Upload members and start tracking at-risk members
             </li>
           </ol>
         </div>
@@ -64,7 +82,7 @@ export default async function SignupPage() {
           Works with Mindbody, Glofox, and CSV upload
         </p>
 
-        <SignupForm />
+        <SignupForm selectedPlan={selectedPlan} />
 
         <p className="text-center text-sm text-gray-600">
           Already have an account?{" "}

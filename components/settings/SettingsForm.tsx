@@ -628,7 +628,11 @@ export default function SettingsForm({
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-700">Plan</dt>
-              <dd className="mt-1 text-sm text-gray-900">Free Trial - £29/month after trial</dd>
+              <dd className="mt-1 text-sm text-gray-900">
+                {gym?.subscription_status === "active"
+                  ? "Paid plan (Starter or Growth)"
+                  : "No active subscription — see Subscription section"}
+              </dd>
             </div>
             <p className="text-sm text-gray-700">
               Stripe integration for subscription management will be configured in production.

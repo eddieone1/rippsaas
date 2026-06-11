@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyForTenant } from "@/lib/interventions/engine";
+import { verifyCronAuth } from "@/lib/jobs/safety";
 
 export const maxDuration = 60;
 
@@ -10,8 +11,14 @@ export const maxDuration = 60;
  * Daily cron job (9 AM). Checks which gyms have auto-interventions enabled,
  * then runs the intervention engine for each with forceApproval so every
  * generated intervention lands in the approval queue before being sent.
+ *
+ * Uses gym.id as tenantId for consistent mapping with approvals page.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const admin = createAdminClient();
 
@@ -36,13 +43,20 @@ export async function POST() {
       });
     }
 
-    // Run the engine for each gym (using default tenant mapping for now)
-    const tenantId =
-      process.env.INTERVENTIONS_DEMO_TENANT_ID ?? "demo-tenant";
-
     const results = [];
     for (const gym of gyms) {
       try {
+        // Use gym.id as tenantId for consistent mapping with approvals page
+        const tenantId = gym.id;
+
+        // Ensure intervention tenant exists (create or update)
+        await admin
+          .from("intervention_tenants")
+          .upsert(
+            { id: tenantId, name: gym.name, timezone: "Europe/London" },
+            { onConflict: "id" }
+          );
+
         const result = await runDailyForTenant(tenantId, {
           forceApproval: true,
         });

@@ -25,21 +25,21 @@ export default function MarketingFooter() {
             <ul className="mt-4 space-y-3">
               <li><Link href="/#features" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Features</Link></li>
               <li><Link href="/pricing" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Pricing</Link></li>
-              <li><Link href="/signup" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Get a demo</Link></li>
+              <li><Link href="/audit" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Get Free Audit</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Company</h4>
             <ul className="mt-4 space-y-3">
               <li><Link href="/login" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Sign in</Link></li>
-              <li><a href="/settings#privacy" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Privacy</a></li>
-              <li><a href="/settings#terms" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Terms</a></li>
+              <li><Link href="/privacy" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Privacy</Link></li>
+              <li><Link href="/terms" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Terms</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Support</h4>
             <ul className="mt-4 space-y-3">
-              <li><Link href="/signup" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Start free trial</Link></li>
+              <li><Link href="/audit" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">Free Retention Audit</Link></li>
               <li><Link href="/pricing" className="text-sm text-gray-400 hover:text-lime-400 transition-colors">View pricing</Link></li>
             </ul>
           </div>

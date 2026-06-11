@@ -5,7 +5,7 @@ import { validatePassword } from "@/lib/password-rules";
 
 export async function POST(request: Request) {
   try {
-    const { email, password, fullName, clientCount } = await request.json();
+    const { email, password, fullName, clientCount, selectedPlan } = await request.json();
 
     if (!email || !password || !fullName || !clientCount) {
       return NextResponse.json(
@@ -32,7 +32,16 @@ export async function POST(request: Request) {
     });
 
     if (signUpError) {
-      return NextResponse.json({ error: signUpError.message }, { status: 400 });
+      const msg = signUpError.message.toLowerCase();
+      const isEmailTaken =
+        msg.includes("already registered") ||
+        msg.includes("already exists") ||
+        msg.includes("user already") ||
+        msg.includes("already been registered");
+      return NextResponse.json(
+        { error: isEmailTaken ? "This email is already being used. Try signing in or use a different email." : signUpError.message },
+        { status: 400 }
+      );
     }
 
     if (!authData.user) {
@@ -42,67 +51,100 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create gym (with trial status) - use admin client to bypass RLS
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+    // Create or reuse gym — subscription chosen during onboarding (no free trial)
+    // selectedPlan (starter_49 | growth_79) is applied during onboarding payment step
+    void selectedPlan;
 
-    // First, try to insert with client_count_range
-    let gymInsert: {
-      name: string;
-      owner_email: string;
-      subscription_status: string;
-      trial_ends_at: string;
-      client_count_range?: string;
-    } = {
-      name: "My Gym", // Will be updated in onboarding
-      owner_email: email,
-      subscription_status: "trialing",
-      trial_ends_at: trialEndsAt.toISOString(),
-    };
-
-    // Add client_count_range if provided
-    if (clientCount) {
-      gymInsert.client_count_range = clientCount;
-    }
-
-    let { data: gymData, error: gymError } = await adminClient
+    // Check if gym already exists for this owner_email (handles retries, orphaned gyms)
+    const { data: existingGym } = await adminClient
       .from("gyms")
-      .insert(gymInsert)
-      .select()
-      .single();
+      .select("id, name, subscription_status, trial_ends_at")
+      .eq("owner_email", email)
+      .maybeSingle();
 
-    // If error is due to missing column, retry without client_count_range
-    if (gymError && gymError.message.includes("client_count_range")) {
-      console.warn("client_count_range column not found, creating gym without it. Migration 006 needs to be applied.");
-      // Retry without client_count_range
-      const { client_count_range, ...gymInsertWithoutClientCount } = gymInsert;
-      const retryResult = await adminClient
+    let gymData: { id: string } & Record<string, unknown>;
+
+    let gymWasReused = false;
+    if (existingGym) {
+      gymData = existingGym as typeof gymData;
+      gymWasReused = true;
+      await adminClient
         .from("gyms")
-        .insert(gymInsertWithoutClientCount)
+        .update({
+          subscription_status: "canceled",
+          trial_ends_at: null,
+          ...(clientCount ? { client_count_range: clientCount } : {}),
+        })
+        .eq("id", existingGym.id);
+    } else {
+      // Create new gym
+      const gymInsert: {
+        name: string;
+        owner_email: string;
+        subscription_status: string;
+        trial_ends_at: null;
+        client_count_range?: string;
+      } = {
+        name: "My Gym", // Will be updated in onboarding
+        owner_email: email,
+        subscription_status: "canceled",
+        trial_ends_at: null,
+      };
+
+      if (clientCount) {
+        gymInsert.client_count_range = clientCount;
+      }
+
+      let { data: insertedGym, error: gymError } = await adminClient
+        .from("gyms")
+        .insert(gymInsert)
         .select()
         .single();
-      
-      gymData = retryResult.data;
-      gymError = retryResult.error;
-      
-      if (gymError) {
+
+      // If error is due to missing column, retry without client_count_range
+      if (gymError && gymError.message.includes("client_count_range")) {
+        const { client_count_range, ...gymInsertWithoutClientCount } = gymInsert;
+        const retryResult = await adminClient
+          .from("gyms")
+          .insert(gymInsertWithoutClientCount)
+          .select()
+          .single();
+        insertedGym = retryResult.data;
+        gymError = retryResult.error;
+      }
+
+      // If duplicate owner_email (race condition), fetch existing gym
+      if (gymError && gymError.message.includes("owner_email_key")) {
+        const { data: raceGym } = await adminClient
+          .from("gyms")
+          .select("id")
+          .eq("owner_email", email)
+          .single();
+        if (raceGym) {
+          gymData = raceGym as typeof gymData;
+          gymWasReused = true;
+        } else {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+          return NextResponse.json(
+            { error: `Failed to create gym: ${gymError.message}` },
+            { status: 500 }
+          );
+        }
+      } else if (gymError) {
+        await supabase.auth.admin.deleteUser(authData.user.id);
         return NextResponse.json(
-          { 
-            error: `Failed to create gym: ${gymError.message}`,
-            note: "Note: Migration 006_add_client_count_range.sql should be applied to store client count data."
-          },
+          { error: `Failed to create gym: ${gymError.message}` },
+          { status: 500 }
+        );
+      } else if (insertedGym) {
+        gymData = insertedGym as typeof gymData;
+      } else {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return NextResponse.json(
+          { error: "Failed to create gym" },
           { status: 500 }
         );
       }
-    }
-
-    if (gymError) {
-      // Clean up: delete the auth user if gym creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json(
-        { error: `Failed to create gym: ${gymError.message}` },
-        { status: 500 }
-      );
     }
 
     // Create user profile - use admin client to bypass RLS
@@ -115,8 +157,10 @@ export async function POST(request: Request) {
     });
 
     if (userError) {
-      // Clean up: delete gym and auth user if user profile creation fails
-      await adminClient.from("gyms").delete().eq("id", gymData.id);
+      // Clean up: delete gym only if we created it (not reused), then delete auth user
+      if (!gymWasReused) {
+        await adminClient.from("gyms").delete().eq("id", gymData.id);
+      }
       await supabase.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json(
         { error: `Failed to create user profile: ${userError.message}` },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
 interface Member {
   firstName: string;
@@ -36,7 +37,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
 
   // Fetch toggle state
   useEffect(() => {
-    fetch("/api/settings/auto-interventions")
+    fetchWithAuth("/api/settings/auto-interventions")
       .then((r) => r.json())
       .then((json) => {
         if (json.data?.enabled != null) setEnabled(json.data.enabled);
@@ -48,7 +49,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
   // Fetch pending approvals
   const loadQueue = useCallback(() => {
     setLoadingQueue(true);
-    fetch(`/api/logs?tenantId=${encodeURIComponent(gymId)}&status=PENDING_APPROVAL&limit=100`)
+    fetchWithAuth(`/api/logs?tenantId=${encodeURIComponent(gymId)}&status=PENDING_APPROVAL&limit=100`)
       .then((r) => r.json())
       .then((data) => {
         if (data.interventions) setInterventions(data.interventions);
@@ -66,7 +67,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
     setToggling(true);
     const newValue = !enabled;
     try {
-      const res = await fetch("/api/settings/auto-interventions", {
+      const res = await fetchWithAuth("/api/settings/auto-interventions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: newValue }),
@@ -85,7 +86,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
   const handleApprove = async (id: string) => {
     setActioning(id);
     try {
-      const res = await fetch(`/api/interventions/${id}/approve`, {
+      const res = await fetchWithAuth(`/api/interventions/${id}/approve`, {
         method: "POST",
       });
       if (res.ok) {
@@ -103,7 +104,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
   const handleDecline = async (id: string) => {
     setActioning(id);
     try {
-      const res = await fetch(`/api/interventions/${id}/cancel`, {
+      const res = await fetchWithAuth(`/api/interventions/${id}/cancel`, {
         method: "POST",
       });
       if (res.ok) {
@@ -119,7 +120,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
     setActioning("all");
     for (const i of interventions) {
       try {
-        await fetch(`/api/interventions/${i.id}/approve`, { method: "POST" });
+        await fetchWithAuth(`/api/interventions/${i.id}/approve`, { method: "POST" });
       } catch {
         // continue with next
       }
@@ -133,7 +134,7 @@ export default function AutoInterventionsSection({ gymId }: { gymId: string }) {
     setActioning("all");
     for (const i of interventions) {
       try {
-        await fetch(`/api/interventions/${i.id}/cancel`, { method: "POST" });
+        await fetchWithAuth(`/api/interventions/${i.id}/cancel`, { method: "POST" });
       } catch {
         // continue with next
       }

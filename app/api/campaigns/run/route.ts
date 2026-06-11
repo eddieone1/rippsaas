@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireApiAuth } from "@/lib/auth/guards";
+import { requireApiAuth, ApiAuthError } from "@/lib/auth/guards";
+import { requirePlanFeature } from "@/lib/auth/plan-guards";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 import { sendEmail, replaceTemplateVariables, createBrandedEmailTemplate } from "@/lib/email/resend";
 import { sendSms } from "@/lib/sms/twilio";
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const adminClient = createAdminClient();
 
+    const body = await request.json();
     const {
       triggerDays,
       channel = "email",
@@ -21,7 +23,26 @@ export async function POST(request: Request) {
       target_segment = "all",
       include_cancelled = false,
       member_ids: requestedMemberIds,
-    } = await request.json();
+    } = body;
+
+    try {
+      if (channel === "sms") {
+        await requirePlanFeature(gymId, "sms_campaigns");
+      } else {
+        await requirePlanFeature(gymId, "email_campaigns");
+      }
+      if (target_segment && target_segment !== "all") {
+        await requirePlanFeature(gymId, "advanced_segmentation");
+      }
+      if (include_cancelled) {
+        await requirePlanFeature(gymId, "advanced_segmentation");
+      }
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        return errorResponse(e.message, e.status);
+      }
+      throw e;
+    }
 
     // Get gym info with branding and sender identity
     const { data: gym } = await supabase

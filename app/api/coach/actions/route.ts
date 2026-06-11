@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateCoachActions } from '@/lib/coach-actions/generate';
 import { differenceInDays, parseISO, formatISO } from 'date-fns';
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/coach/actions
  * 

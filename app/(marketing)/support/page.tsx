@@ -16,8 +16,8 @@ export default function SupportPage() {
         <SupportForm />
         <p className="mt-8 text-center text-sm text-white/50">
           Prefer to sign up?{" "}
-          <Link href="/signup" className="text-[#9EFF00] hover:underline">
-            Start free trial
+          <Link href="/audit" className="text-[#9EFF00] hover:underline">
+            Get Free Retention Audit
           </Link>
         </p>
       </div>

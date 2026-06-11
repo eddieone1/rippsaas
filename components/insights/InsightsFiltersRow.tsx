@@ -10,6 +10,8 @@ interface InsightsFiltersRowProps {
   onMemberFilterChange: (v: string) => void;
   /** Locations derived from real member data; only these are shown besides "All Locations". */
   locations?: string[];
+  showMultiLocation?: boolean;
+  showMonthlyReportRange?: boolean;
 }
 
 const TIME_OPTIONS: { value: TimeRange; label: string }[] = [
@@ -26,7 +28,12 @@ export default function InsightsFiltersRow({
   onSegmentChange,
   onMemberFilterChange,
   locations = [],
+  showMultiLocation = false,
+  showMonthlyReportRange = false,
 }: InsightsFiltersRowProps) {
+  const timeOptions = TIME_OPTIONS.filter(
+    (o) => showMonthlyReportRange || o.value !== "90"
+  );
   const inputClass =
     "rounded-full border border-white/[0.08] bg-white/5 px-4 py-2 text-sm text-white focus:border-[#9EFF00]/50 focus:outline-none focus:ring-1 focus:ring-[#9EFF00]/30";
 
@@ -37,22 +44,24 @@ export default function InsightsFiltersRow({
         onChange={(e) => onTimeRangeChange(e.target.value as TimeRange)}
         className={inputClass}
       >
-        {TIME_OPTIONS.map((o) => (
+        {timeOptions.map((o) => (
           <option key={o.value} value={o.value} className="bg-[#2F3131] text-white">
             {o.label}
           </option>
         ))}
       </select>
-      <select
-        value={filters.location}
-        onChange={(e) => onLocationChange(e.target.value)}
-        className={inputClass}
-      >
-        <option value="all" className="bg-[#2F3131] text-white">All Locations</option>
-        {locations.map((loc) => (
-          <option key={loc} value={loc.toLowerCase()} className="bg-[#2F3131] text-white">{loc}</option>
-        ))}
-      </select>
+      {showMultiLocation && locations.length > 0 && (
+        <select
+          value={filters.location}
+          onChange={(e) => onLocationChange(e.target.value)}
+          className={inputClass}
+        >
+          <option value="all" className="bg-[#2F3131] text-white">All Locations</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc.toLowerCase()} className="bg-[#2F3131] text-white">{loc}</option>
+          ))}
+        </select>
+      )}
       <select
         value={filters.segment}
         onChange={(e) => onSegmentChange(e.target.value)}

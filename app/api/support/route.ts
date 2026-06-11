@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email/resend";
 
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || process.env.RESEND_FROM_EMAIL || "support@rip.app";
-
 export async function POST(req: Request) {
+  const supportEmail =
+    process.env.SUPPORT_EMAIL?.trim() || process.env.RESEND_FROM_EMAIL?.trim();
+  if (!supportEmail) {
+    console.error("Support API: SUPPORT_EMAIL or RESEND_FROM_EMAIL not configured");
+    return NextResponse.json(
+      { error: "Support is not configured. Please try again later." },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { name, email, message } = body;
@@ -25,7 +33,7 @@ export async function POST(req: Request) {
     `;
 
     const { error } = await sendEmail({
-      to: SUPPORT_EMAIL,
+      to: supportEmail,
       subject,
       body: html,
     });

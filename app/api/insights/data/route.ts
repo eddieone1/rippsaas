@@ -35,6 +35,8 @@ function getReasonsFromMember(
   return reasons;
 }
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/insights/data
  * Returns members in Insights page shape (real data from DB).

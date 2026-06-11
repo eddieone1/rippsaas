@@ -78,7 +78,7 @@ export default function MissionControlInbox({
   return (
     <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="border-b border-gray-200 p-3">
-        <h2 className="text-sm font-semibold text-gray-900">Today's At-Risk Members</h2>
+        <h2 className="text-sm font-semibold text-gray-900">Today&apos;s At-Risk Members</h2>
         <div className="mt-2 flex flex-wrap gap-1">
           {tabs.map((t) => (
             <button

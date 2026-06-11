@@ -13,10 +13,11 @@ export default function ProductTourWrapper({ userId }: ProductTourWrapperProps) 
   const router = useRouter();
 
   useEffect(() => {
-    // Check if tour was already completed (from localStorage as backup)
+    // Sync localStorage with DB: if DB said to show (we're rendered), check localStorage
+    // as backup for same-session completion (prevents flash before refresh)
     const tourCompleted = localStorage.getItem(`tour_completed_${userId}`);
     if (tourCompleted === "true") {
-      return; // Don't show tour if already completed
+      return; // Don't show tour if already completed this session
     }
 
     // Small delay to ensure page is fully loaded

@@ -5,6 +5,8 @@ import { generateCoachActions } from '@/lib/coach-actions/generate';
 import { getChampCategoryForActionType } from '@/lib/coach-actions/champ';
 import { differenceInDays, parseISO, formatISO } from 'date-fns';
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/coach/playbook
  *

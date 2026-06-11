@@ -104,7 +104,7 @@ export default function CampaignList({
             Run Engagement Campaign
           </h2>
           <p className="text-sm text-gray-600 mb-4">
-            Send engagement messages (Email or SMS) to members who haven't visited in the selected number of days. Choose a template or create a custom message.
+            Send engagement messages (Email or SMS) to members who haven&apos;t visited in the selected number of days. Choose a template or create a custom message.
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {defaultTriggers.map((days) => (

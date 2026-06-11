@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { trackOnboardingEvent } from "@/lib/analytics";
 
-export default function GymInfoForm() {
+interface GymInfoFormProps {
+  defaultOwnerName?: string;
+}
+
+export default function GymInfoForm({ defaultOwnerName }: GymInfoFormProps) {
   const router = useRouter();
   const [gymName, setGymName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
+  const [ownerName, setOwnerName] = useState(defaultOwnerName ?? "");
+  const [hasTrackedStart, setHasTrackedStart] = useState(false);
+
+  useEffect(() => {
+    if (!hasTrackedStart) {
+      trackOnboardingEvent("onboarding_gym_info_started");
+      setHasTrackedStart(true);
+    }
+  }, [hasTrackedStart]);
   const [phone, setPhone] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [searchingAddress, setSearchingAddress] = useState(false);
@@ -130,6 +143,7 @@ export default function GymInfoForm() {
         return;
       }
 
+      trackOnboardingEvent("onboarding_gym_info_completed");
       router.push("/onboarding/payment");
     } catch (err) {
       setError("An unexpected error occurred");

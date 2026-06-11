@@ -18,10 +18,12 @@ export default function NavbarClient({
   branding,
   userRole,
   gymId,
+  showCoachAccountability = false,
 }: { 
   branding?: Branding | null;
   userRole?: UserRole | null;
   gymId?: string | null;
+  showCoachAccountability?: boolean;
 }) {
   const [pendingApprovals, setPendingApprovals] = useState(0);
 
@@ -129,7 +131,8 @@ export default function NavbarClient({
                   </span>
                 )}
               </Link>
-              {(userRole === 'coach' || userRole === 'owner') && (
+              {showCoachAccountability &&
+                (userRole === 'coach' || userRole === 'owner' || userRole === 'admin') && (
                 <Link
                   href="/coach-accountability"
                   className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
@@ -159,7 +162,7 @@ export default function NavbarClient({
                   My Actions
                 </Link>
               )}
-              {userRole === 'owner' && (
+              {(userRole === 'owner' || userRole === 'admin') && (
                 <Link
                   href="/settings"
                   data-tour="settings-nav"

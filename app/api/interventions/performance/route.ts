@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * API endpoint to fetch intervention performance metrics
  * MVP-level reporting: Simple metrics without complex attribution

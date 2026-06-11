@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import ProductTourWrapper from "@/components/onboarding/ProductTourWrapper";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 
 /**
  * Main Dashboard Page
@@ -22,35 +23,51 @@ export default async function DashboardPage({
 }: {
   searchParams: { imported?: string; updated?: string };
 }) {
-  const { gymId } = await getGymContext();
+  const { gymId, userProfile } = await getGymContext();
 
   if (!gymId) {
     redirect("/onboarding/gym-info");
   }
 
-  // Fetch gym branding and check tour status
+  // Enforce onboarding flow: if gym complete but payment step not done, send to payment
+  // (Backwards compat: existing users before migration have null onboarding_completed_at;
+  // if gym is complete and they have members or have_completed_tour, treat as complete)
+  const skipOnboardingCheck =
+    userProfile?.onboarding_completed_at ||
+    (userProfile?.has_completed_tour && userProfile.has_completed_tour === true);
+
+  if (!skipOnboardingCheck) {
+    const supabase = await createClient();
+    const { data: gym } = await supabase
+      .from("gyms")
+      .select("name, address_line1")
+      .eq("id", gymId)
+      .single();
+
+    const gymComplete =
+      !!gym?.name && gym.name !== "My Gym" && !!gym?.address_line1;
+
+    if (gymComplete) {
+      redirect("/onboarding/payment");
+    } else {
+      redirect("/onboarding/gym-info");
+    }
+  }
+
+  // Fetch gym branding, trial status, and check tour status
   const supabase = await createClient();
   const { data: gym } = await supabase
     .from("gyms")
-    .select("name, logo_url, brand_primary_color, brand_secondary_color")
+    .select("name, logo_url, brand_primary_color, brand_secondary_color, subscription_status, trial_ends_at")
     .eq("id", gymId)
     .single();
 
   const primaryColor = gym?.brand_primary_color || "#84cc16";
   const secondaryColor = gym?.brand_secondary_color || "#65a30d";
 
-  // Check user and profile
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { data: userProfile } = user
-    ? await supabase
-        .from("users")
-        .select("full_name, has_completed_tour, role")
-        .eq("id", user.id)
-        .maybeSingle()
-    : { data: null };
 
   const showTour =
     user && userProfile
@@ -71,6 +88,11 @@ export default async function DashboardPage({
             <p className="mt-1 text-sm text-gray-600">{gym.name}</p>
           )}
         </div>
+
+        {/* Subscribe / audit banner for non-paying gyms */}
+        {gym?.subscription_status !== "active" && (
+          <TrialBanner gymName={gym?.name} />
+        )}
 
         {/* Success message (upload) */}
         {(searchParams.imported || searchParams.updated) && (

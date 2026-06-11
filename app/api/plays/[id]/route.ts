@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/interventions/db";
 import { updatePlaySchema } from "@/lib/interventions/validate";
+import { requireApiAuth, ApiAuthError } from "@/lib/auth/guards";
+import { requirePlanFeature } from "@/lib/auth/plan-guards";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { gymId } = await requireApiAuth();
     const { id } = await params;
     const db = getDb();
 
@@ -14,6 +17,7 @@ export async function GET(
       .from("intervention_plays")
       .select("*")
       .eq("id", id)
+      .eq("tenant_id", gymId)
       .maybeSingle();
 
     if (error) throw error;
@@ -27,6 +31,10 @@ export async function GET(
 
     return NextResponse.json({ ...play, _count: { interventions: count ?? 0 } });
   } catch (e) {
+    if (e && typeof e === "object" && "status" in e) {
+      const err = e as { message?: string; status: number };
+      return NextResponse.json({ error: err.message ?? "Unauthorized" }, { status: err.status });
+    }
     console.error("Play GET", e);
     return NextResponse.json({ error: "Failed to get play" }, { status: 500 });
   }
@@ -37,9 +45,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { gymId } = await requireApiAuth();
     const { id } = await params;
     const body = await request.json();
     const data = updatePlaySchema.parse(body);
+
+    try {
+      if (data.channels?.includes("SMS")) {
+        await requirePlanFeature(gymId, "sms_campaigns");
+      }
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        return NextResponse.json({ error: e.message }, { status: e.status });
+      }
+      throw e;
+    }
 
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
@@ -61,6 +81,7 @@ export async function PATCH(
       .from("intervention_plays")
       .update(updateData)
       .eq("id", id)
+      .eq("tenant_id", gymId)
       .select()
       .maybeSingle();
 
@@ -68,6 +89,10 @@ export async function PATCH(
     if (!play) return NextResponse.json({ error: "Play not found" }, { status: 404 });
     return NextResponse.json(play);
   } catch (e) {
+    if (e && typeof e === "object" && "status" in e) {
+      const err = e as { message?: string; status: number };
+      return NextResponse.json({ error: err.message ?? "Unauthorized" }, { status: err.status });
+    }
     if (e && typeof e === "object" && "issues" in e) {
       return NextResponse.json({ error: "Validation failed", details: e }, { status: 400 });
     }
@@ -81,18 +106,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { gymId } = await requireApiAuth();
     const { id } = await params;
     const db = getDb();
 
     const { error, count } = await db
       .from("intervention_plays")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("tenant_id", gymId);
 
     if (error) throw error;
     if (count === 0) return NextResponse.json({ error: "Play not found" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (e) {
+    if (e && typeof e === "object" && "status" in e) {
+      const err = e as { message?: string; status: number };
+      return NextResponse.json({ error: err.message ?? "Unauthorized" }, { status: err.status });
+    }
     console.error("Play DELETE", e);
     return NextResponse.json({ error: "Failed to delete play" }, { status: 500 });
   }

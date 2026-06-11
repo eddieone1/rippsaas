@@ -114,8 +114,8 @@ export async function GET(request: Request) {
       type: "new_touches",
       title: `${touchCount} touches in last 7 days`,
       description: "Coach touches and campaign sends combined.",
-      actionHref: "/campaigns",
-      actionLabel: "View campaigns",
+      actionHref: "/plays",
+      actionLabel: "View plays",
       metadata: { count: touchCount },
     });
 

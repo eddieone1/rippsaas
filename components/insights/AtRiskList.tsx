@@ -18,7 +18,7 @@ interface AtRiskListProps {
   description?: string;
 }
 
-export default function AtRiskList({ members, seeAllHref = "#", description }: AtRiskListProps) {
+export default function AtRiskList({ members, seeAllHref = "/members/at-risk", description }: AtRiskListProps) {
   const list = members.filter((m) => m.stage === "at_risk").slice(0, 6);
   return (
     <div className="rounded-xl border border-white/[0.08] bg-[#2F3131] p-4 shadow-lg">

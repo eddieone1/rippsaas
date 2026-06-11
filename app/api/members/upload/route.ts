@@ -8,6 +8,7 @@ import { geocodeAddress, calculateDistance } from "@/lib/proximity";
 import { recalculateCommitmentScoresForGym } from "@/lib/jobs/commitment-scores";
 import { detectAtRiskMembersForGym } from "@/lib/jobs/at-risk-detection";
 import { requireApiAuth } from "@/lib/auth/guards";
+import { requireCsvUploadAccess } from "@/lib/auth/plan-guards";
 import { successResponse, errorResponse, handleApiError } from "@/lib/api/response";
 
 
@@ -17,7 +18,8 @@ function normalizeName(s: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { gymId } = await requireApiAuth();
+    const { gymId, userProfile } = await requireApiAuth();
+    await requireCsvUploadAccess(gymId, userProfile.id);
     const supabase = await createClient();
 
     // Fetch gym coordinates for distance calculation

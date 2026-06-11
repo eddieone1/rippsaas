@@ -1,39 +1,60 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { trackOnboardingEvent } from "@/lib/analytics";
+import { PLANS, type PlanId } from "@/lib/pricing";
+
+type PaidPlanId = "starter_49" | "growth_79";
 
 export default function PaymentForm() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<PaidPlanId | "audit" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleStartTrial = async () => {
+  useEffect(() => {
+    trackOnboardingEvent("onboarding_payment_started");
+  }, []);
+
+  const handleSelectPlan = async (planId: PlanId) => {
     setError(null);
-    setLoading(true);
+    setLoading(planId === "free_audit" ? "audit" : planId);
 
     try {
       const response = await fetch("/api/onboarding/payment", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to start trial");
-        setLoading(false);
+        setError(data.error || "Failed to continue");
+        setLoading(null);
         return;
       }
 
-      // Trial is automatically started (no Stripe Checkout in MVP)
-      // Redirect directly to dashboard after onboarding completion
-      // Use window.location for a hard redirect to ensure fresh server-side data
-      window.location.href = "/dashboard";
-    } catch (err) {
+      trackOnboardingEvent("onboarding_payment_completed", { planId });
+
+      if (planId === "free_audit") {
+        window.location.href = "/audit?submitted=1";
+        return;
+      }
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      window.location.href = "/onboarding/upload";
+    } catch {
       setError("An unexpected error occurred");
-      setLoading(false);
+      setLoading(null);
     }
   };
+
+  const starter = PLANS.starter_49;
+  const growth = PLANS.growth_79;
 
   return (
     <div className="mt-6 space-y-6">
@@ -43,50 +64,54 @@ export default function PaymentForm() {
         </div>
       )}
 
-      <div className="rounded-lg border border-white/10 bg-white/5 p-6">
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-white">Free Trial</h3>
-          <p className="mt-2 text-sm text-white/80">
-            14 days free, then £99/month (Starter plan)
-          </p>
-          <p className="mt-1 text-xs text-white/50">Pays for itself by saving 2–3 members per month</p>
-          <ul className="mt-4 space-y-2 text-left text-sm text-white/80">
-            <li className="flex items-center">
-              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Member retention dashboard
-            </li>
-            <li className="flex items-center">
-              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Automated email &amp; SMS plays
-            </li>
-            <li className="flex items-center">
-              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Prove which interventions work
-            </li>
-            <li className="flex items-center">
-              <svg className="mr-2 h-5 w-5 text-[#9EFF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Unlimited member imports
-            </li>
-          </ul>
-        </div>
+      <div className="rounded-lg border border-dashed border-[#9EFF00]/40 bg-[#9EFF00]/5 p-5">
+        <h3 className="text-lg font-bold text-white">Free Retention Audit</h3>
+        <p className="mt-1 text-sm text-white/70">
+          Not ready to subscribe? Request a free audit of your at-risk members — no card
+          required.
+        </p>
+        <Link
+          href="/audit"
+          className="mt-4 inline-block text-sm font-medium text-[#9EFF00] hover:underline"
+        >
+          Request your free audit →
+        </Link>
       </div>
 
-      <div>
-        <button
-          onClick={handleStartTrial}
-          disabled={loading}
-          className="w-full rounded-lg bg-[#9EFF00] px-4 py-3 text-sm font-semibold text-black hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#9EFF00] disabled:opacity-50"
-        >
-          {loading ? "Starting trial..." : "Start 14-day trial"}
-        </button>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-white/10 bg-white/5 p-5 flex flex-col">
+          <h3 className="text-lg font-bold text-white">{starter.name}</h3>
+          <p className="mt-1 text-2xl font-bold text-white">
+            {starter.priceLabel}
+            <span className="text-sm font-normal text-white/55">/mo per location</span>
+          </p>
+          <p className="mt-2 text-xs text-white/55 flex-1">{starter.description}</p>
+          <button
+            type="button"
+            onClick={() => handleSelectPlan("starter_49")}
+            disabled={loading !== null}
+            className="mt-4 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+          >
+            {loading === "starter_49" ? "Redirecting…" : starter.cta}
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-[#9EFF00]/40 bg-white/5 p-5 flex flex-col">
+          <h3 className="text-lg font-bold text-white">{growth.name}</h3>
+          <p className="mt-1 text-2xl font-bold text-white">
+            {growth.priceLabel}
+            <span className="text-sm font-normal text-white/55">/mo per location</span>
+          </p>
+          <p className="mt-2 text-xs text-white/55 flex-1">{growth.description}</p>
+          <button
+            type="button"
+            onClick={() => handleSelectPlan("growth_79")}
+            disabled={loading !== null}
+            className="mt-4 w-full rounded-lg bg-[#9EFF00] px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+          >
+            {loading === "growth_79" ? "Redirecting…" : growth.cta}
+          </button>
+        </div>
       </div>
     </div>
   );

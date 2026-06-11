@@ -25,6 +25,7 @@ import {
   getReasonCounts,
 } from "./insights-data";
 import type { Member, Campaign } from "./insights-types";
+import { usePlanFeatures } from "@/components/plan/PlanFeaturesProvider";
 
 function filterMembers(members: Member[], filters: FilterState): Member[] {
   let out = [...members];
@@ -41,6 +42,7 @@ function filterMembers(members: Member[], filters: FilterState): Member[] {
 }
 
 export default function InsightsPageClient() {
+  const { features } = usePlanFeatures();
   const [activeTab, setActiveTab] = useState<InsightsTab>("overview");
   const [members, setMembers] = useState<Member[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -141,6 +143,8 @@ export default function InsightsPageClient() {
             onSegmentChange={(v) => setFilters((f) => ({ ...f, segment: v }))}
             onMemberFilterChange={(v) => setFilters((f) => ({ ...f, memberFilter: v }))}
             locations={Array.from(new Set(members.map((m) => m.location).filter(Boolean)))}
+            showMultiLocation={features.multi_location}
+            showMonthlyReportRange={features.monthly_retention_report}
           />
         </div>
 
@@ -185,7 +189,7 @@ export default function InsightsPageClient() {
                   <StackedAreaChart data={riskSeries} />
                 </ChartCard>
               </div>
-              <AtRiskList members={filteredMembers} description="Members currently in the at-risk stage. Prioritise outreach here to prevent churn." />
+              <AtRiskList members={filteredMembers} seeAllHref="/members/at-risk" description="Members currently in the at-risk stage. Prioritise outreach here to prevent churn." />
             </div>
             <ChartCard
               title="Members by Stage"
@@ -338,7 +342,7 @@ export default function InsightsPageClient() {
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
-                <CampaignTable campaigns={campaigns} description="Each row is a play or send: who it reached, what share responded, and how many made another visit. Use it to compare outreach and double down on what works." />
+                <CampaignTable campaigns={campaigns} viewAllHref="/plays" description="Each row is a play or send: who it reached, what share responded, and how many made another visit. Use it to compare outreach and double down on what works." />
               </div>
               <ChartCard
                 title="Overall Outreach Response"
@@ -352,9 +356,6 @@ export default function InsightsPageClient() {
                     responseRates={campaigns.slice(0, 6).map((c) => c.responseRate)}
                   />
                 )}
-                <a href="#" className="mt-3 inline-block text-xs font-medium text-[#9EFF00] hover:underline">
-                  View segment
-                </a>
               </ChartCard>
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -7,6 +7,7 @@ interface Gym {
   id: string;
   name: string;
   subscription_status: string;
+  trial_ends_at?: string | null;
   address_line1?: string | null;
   address_line2?: string | null;
   city?: string | null;
@@ -273,7 +274,7 @@ export default function MinimumViableControl({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h2>
         <dl className="space-y-2">
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <dt className="text-sm font-medium text-gray-500">Status</dt>
             <dd>
               <span
@@ -290,9 +291,26 @@ export default function MinimumViableControl({
             </dd>
           </div>
         </dl>
-        <p className="mt-4 text-xs text-gray-500">
-          Billing and subscription management coming soon.
-        </p>
+        {gym?.subscription_status !== "active" && (
+          <div className="mt-4 rounded-lg border border-lime-200 bg-lime-50 p-4">
+            <p className="text-sm font-medium text-gray-900">Choose a plan</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Starter from £49/month per location · Growth from £79/month per location.
+              Or <a href="/audit" className="text-lime-700 hover:underline">request a free retention audit</a>.
+            </p>
+            <a
+              href="/settings#subscription"
+              className="mt-3 inline-flex rounded-md bg-lime-600 px-4 py-2 text-sm font-medium text-white hover:bg-lime-500"
+            >
+              View plans
+            </a>
+          </div>
+        )}
+        {gym?.subscription_status === "active" && (
+          <p className="mt-4 text-xs text-gray-500">
+            You&apos;re on a paid plan. Billing managed via Stripe.
+          </p>
+        )}
       </div>
     </div>
   );

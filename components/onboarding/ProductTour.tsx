@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { trackOnboardingEvent } from "@/lib/analytics";
 
 interface TourStep {
   id: string;
@@ -95,15 +96,16 @@ export default function ProductTour({ userId, showTour, onComplete }: ProductTou
   };
 
   const handleSkip = () => {
-    // Just call handleComplete which will mark it as done
+    trackOnboardingEvent("onboarding_tour_skipped");
     handleComplete();
   };
 
   const handleComplete = async () => {
     setIsVisible(false);
     document.body.style.overflow = "";
-    
-    // Mark tour as completed in database immediately
+    trackOnboardingEvent("onboarding_tour_completed");
+
+    // Mark tour as completed in database (source of truth)
     try {
       const response = await fetch("/api/user/mark-tour-complete", {
         method: "POST",

@@ -157,7 +157,7 @@ export default function InterventionPerformance({
             No insights yet — send your first intervention
           </h2>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Once you start messaging at-risk members, you'll see which interventions are most effective at getting people back through the door.
+            Once you start messaging at-risk members, you&apos;ll see which interventions are most effective at getting people back through the door.
           </p>
           <Link
             href="/plays"

@@ -120,6 +120,10 @@ See `supabase/migrations/001_initial_schema.sql` for the complete schema.
 
 For a complete list of all features, see [FEATURES.md](./FEATURES.md)
 
+## Launch Guide
+
+For a step-by-step production launch with all integrations configurable, see [docs/LAUNCH_GUIDE.md](./docs/LAUNCH_GUIDE.md).
+
 ## License
 
 Private - All rights reserved

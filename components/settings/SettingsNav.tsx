@@ -28,8 +28,9 @@ const GROUPS = [
   {
     label: "Account",
     sections: [
+      { id: "subscription", label: "Subscription" },
       { id: "personal", label: "Personal" },
-      { id: "gym-profile", label: "Gym & Subscription" },
+      { id: "gym-profile", label: "Gym profile" },
     ],
   },
 ] as const;

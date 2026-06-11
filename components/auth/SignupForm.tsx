@@ -7,8 +7,8 @@ import { validatePassword, getPasswordRuleStatus } from "@/lib/password-rules";
 
 function friendlyError(message: string): string {
   const lower = message.toLowerCase();
-  if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already")) {
-    return "An account with this email already exists. Try signing in or use a different email.";
+  if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already") || lower.includes("already been registered")) {
+    return "This email is already being used. Try signing in or use a different email.";
   }
   if (lower.includes("invalid email")) {
     return "Please enter a valid email address.";
@@ -19,7 +19,11 @@ function friendlyError(message: string): string {
   return message;
 }
 
-export default function SignupForm() {
+interface SignupFormProps {
+  selectedPlan?: string;
+}
+
+export default function SignupForm({ selectedPlan }: SignupFormProps) {
   const router = useRouter();
   const errorRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<1 | 2>(1);
@@ -90,6 +94,7 @@ export default function SignupForm() {
           password,
           fullName: fullName.trim(),
           clientCount,
+          selectedPlan: selectedPlan || null,
         }),
       });
 
@@ -108,6 +113,8 @@ export default function SignupForm() {
         setEmailVerificationSent(true);
         setError(null);
         setLoading(false);
+        // Redirect to verify-email page so they know what to do next
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
 

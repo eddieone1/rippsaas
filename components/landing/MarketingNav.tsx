@@ -38,10 +38,10 @@ export default function MarketingNav() {
             Sign in
           </Link>
           <Link
-            href="/signup"
+            href="/audit"
             className="rounded-md bg-lime-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-lime-400 transition-colors"
           >
-            Get a demo
+            Get Free Audit
           </Link>
         </nav>
       </div>

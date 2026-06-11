@@ -72,8 +72,9 @@ export default function LoginForm() {
     }
   };
 
-  const redirectTo = searchParams.get("redirect");
+  const redirectTo = searchParams.get("redirect") ?? searchParams.get("returnUrl");
   const token = searchParams.get("token");
+  const sessionExpired = searchParams.get("reason") === "session_expired";
   const forgotParams = new URLSearchParams();
   if (redirectTo) forgotParams.set("redirect", redirectTo);
   if (token) forgotParams.set("token", token);
@@ -81,6 +82,13 @@ export default function LoginForm() {
 
   return (
     <form className="mt-8 space-y-6" onSubmit={handleSubmit} aria-describedby={error ? "login-error" : undefined}>
+      {sessionExpired && (
+        <div className="rounded-md bg-amber-50 p-4" role="alert">
+          <p className="text-sm text-amber-800">
+            Your session has expired. Please log in again to continue.
+          </p>
+        </div>
+      )}
       {error && (
         <div
           ref={errorRef}

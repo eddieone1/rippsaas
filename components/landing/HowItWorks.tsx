@@ -3,13 +3,13 @@ import Link from "next/link";
 const STEPS = [
   {
     step: 1,
-    title: "Sign up",
-    description: "Create your account and add your gym details. No credit card required.",
+    title: "Get your free audit",
+    description: "Send your member data — no card required. We'll show you who's at risk and why.",
   },
   {
     step: 2,
-    title: "Upload members",
-    description: "Import from Mindbody, Glofox, TeamUp, or upload a CSV. We'll score risk automatically.",
+    title: "Choose a plan",
+    description: "When you're ready, subscribe to track at-risk members and run retention actions.",
   },
   {
     step: 3,
@@ -41,10 +41,10 @@ export default function HowItWorks() {
               <p className="mt-2 text-base leading-relaxed text-white/70">{item.description}</p>
               {item.step === 3 && (
                 <Link
-                  href="/signup"
+                  href="/audit"
                   className="mt-6 inline-block rounded-lg bg-[#9EFF00] px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
                 >
-                  Start free trial
+                  Get Free Audit
                 </Link>
               )}
             </div>
